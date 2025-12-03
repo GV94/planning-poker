@@ -80,6 +80,17 @@ interface RevealErrorPayload {
 }
 
 type RevealAckPayload = RevealSuccessPayload | RevealErrorPayload;
+
+interface ResetSuccessPayload {
+  ok: true;
+}
+
+interface ResetErrorPayload {
+  ok: false;
+  error: string;
+}
+
+type ResetAckPayload = ResetSuccessPayload | ResetErrorPayload;
 function normalizeName(name?: string): string {
   const trimmed = name?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : 'Anonymous';
@@ -271,6 +282,48 @@ function handleReveal(
   }
 }
 
+function handleReset(
+  socket: Socket,
+  data: { lobbyId?: LobbyId },
+  ack?: (payload: ResetAckPayload) => void
+) {
+  const lobbyId = data.lobbyId;
+  if (!lobbyId) {
+    if (ack) {
+      ack({ ok: false, error: 'Missing lobbyId' });
+    }
+    return;
+  }
+
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) {
+    if (ack) {
+      ack({ ok: false, error: 'Lobby not found' });
+    }
+    return;
+  }
+
+  const clientId: ClientId = socket.id;
+  if (clientId !== lobby.hostId) {
+    if (ack) {
+      ack({ ok: false, error: 'Only the lobby owner can reset the lobby' });
+    }
+    return;
+  }
+
+  // Clear all votes and hide them again.
+  for (const participant of lobby.participants.values()) {
+    participant.vote = undefined;
+  }
+  lobby.isRevealed = false;
+
+  io.to(lobbyId).emit('lobby:reset', { lobbyId });
+
+  if (ack) {
+    ack({ ok: true });
+  }
+}
+
 io.on('connection', (socket) => {
   console.log('client connected', socket.id);
 
@@ -323,6 +376,14 @@ io.on('connection', (socket) => {
     'lobby:reveal',
     (data: { lobbyId?: LobbyId }, ack?: (payload: RevealAckPayload) => void) =>
       handleReveal(socket, data, ack)
+  );
+
+  // Client should emit:
+  //   socket.emit('lobby:reset', { lobbyId }, (response) => { ... })
+  socket.on(
+    'lobby:reset',
+    (data: { lobbyId?: LobbyId }, ack?: (payload: ResetAckPayload) => void) =>
+      handleReset(socket, data, ack)
   );
 });
 

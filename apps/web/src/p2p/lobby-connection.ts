@@ -182,3 +182,19 @@ export function revealCards(socket: Socket, lobbyId: string): Promise<void> {
     );
   });
 }
+
+export function resetLobby(socket: Socket, lobbyId: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    socket.emit(
+      'lobby:reset',
+      { lobbyId },
+      (payload?: { ok: boolean; error?: string }) => {
+        if (!payload?.ok) {
+          reject(new Error(payload?.error ?? 'Failed to reset lobby'));
+          return;
+        }
+        resolve();
+      }
+    );
+  });
+}

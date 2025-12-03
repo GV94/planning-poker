@@ -10,6 +10,7 @@ import {
   castVote,
   joinLobby,
   revealCards,
+  resetLobby,
 } from '../../p2p/lobby-connection.js';
 import type { PlanningPokerCard } from 'shared-types';
 
@@ -20,6 +21,7 @@ export function LobbyPage() {
   const [name, setName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   const CARDS: PlanningPokerCard[] = [
     0,
@@ -113,14 +115,33 @@ export function LobbyPage() {
       });
     }
 
+    function handleReset(event: { lobbyId: string }) {
+      setSession((prev) => {
+        if (!prev || prev.lobbyId !== event.lobbyId) return prev;
+        const clearedParticipants = prev.participants.map((p) => ({
+          ...p,
+          vote: undefined,
+        }));
+        const updated: LobbySession = {
+          ...prev,
+          participants: clearedParticipants,
+          isRevealed: false,
+        };
+        setLobbySession(updated);
+        return updated;
+      });
+    }
+
     socket.on('lobby:participant-joined', handleParticipantJoined);
     socket.on('lobby:voted', handleVoted);
     socket.on('lobby:revealed', handleRevealed);
+    socket.on('lobby:reset', handleReset);
 
     return () => {
       socket.off('lobby:participant-joined', handleParticipantJoined);
       socket.off('lobby:voted', handleVoted);
       socket.off('lobby:revealed', handleRevealed);
+      socket.off('lobby:reset', handleReset);
     };
   }, [session]);
 
@@ -209,6 +230,18 @@ export function LobbyPage() {
     }
   }
 
+  async function handleReset() {
+    try {
+      if (!session) return;
+      setIsResetting(true);
+      await resetLobby(session.socket, session.lobbyId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reset lobby');
+    } finally {
+      setIsResetting(false);
+    }
+  }
+
   return (
     <div>
       <h2>Lobby {session.lobbyId}</h2>
@@ -216,15 +249,26 @@ export function LobbyPage() {
       <p>Socket ID: {session.socket.id}</p>
       {isAdmin && (
         <div className="mt-4">
-          <Button
-            type="button"
-            variant={session.isRevealed ? 'outline' : 'default'}
-            size="sm"
-            disabled={session.isRevealed || isRevealing}
-            onClick={handleReveal}
-          >
-            {session.isRevealed ? 'Votes revealed' : 'Reveal votes'}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              type="button"
+              variant={session.isRevealed ? 'outline' : 'default'}
+              size="sm"
+              disabled={session.isRevealed || isRevealing}
+              onClick={handleReveal}
+            >
+              {session.isRevealed ? 'Votes revealed' : 'Reveal votes'}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isResetting}
+              onClick={handleReset}
+            >
+              {isResetting ? 'Resetting...' : 'Reset lobby'}
+            </Button>
+          </div>
         </div>
       )}
       <div className="mt-4">
