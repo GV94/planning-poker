@@ -63,11 +63,11 @@
       "executor": "nx:noop"
     },
     "serve": {
-      "executor": "nx:run-commands",
-      "dependsOn": ["build"],
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
       "options": {
-        "command": "node dist/apps/p2p-manager/main.js",
-        "cwd": "."
+        "buildTarget": "p2p-manager:build",
+        "runBuildTargetDependencies": true
       }
     }
   },
