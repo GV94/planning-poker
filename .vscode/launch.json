@@ -5,14 +5,17 @@
       "type": "node",
       "request": "launch",
       "name": "Debug p2p-manager with Nx",
-      "runtimeExecutable": "pnpm exec",
-      "runtimeArgs": ["nx", "serve", "p2p-manager"],
-      "env": {
-        "NODE_OPTIONS": "--inspect=9229"
-      },
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": [
+        "nx",
+        "serve",
+        "p2p-manager"
+      ],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
-      "skipFiles": ["<node_internals>/**"],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
       "sourceMaps": true,
       "outFiles": [
         "${workspaceFolder}/p2p-manager/dist/**/*.(m|c|)js",

@@ -6,6 +6,13 @@ export interface CreateLobbyResult {
   socket: Socket;
 }
 
+export interface JoinLobbyResult {
+  lobbyId: string;
+  hostId: string;
+  clientId: string;
+  socket: Socket;
+}
+
 function getP2PBaseUrl(): string {
   const fromEnv = import.meta.env.VITE_P2P_BASE as string | undefined;
   return fromEnv ?? 'http://localhost:3002';
@@ -47,6 +54,63 @@ export function createLobby(): Promise<CreateLobbyResult> {
           resolve({ ...payload, socket });
         }
       );
+    };
+
+    socket.once('connect_error', onError);
+    socket.once('connect', onConnect);
+  });
+}
+
+interface JoinLobbySuccessPayload {
+  ok: true;
+  lobbyId: string;
+  hostId: string;
+  clientId: string;
+}
+
+interface JoinLobbyErrorPayload {
+  ok: false;
+  error: string;
+}
+
+type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
+
+/**
+ * Connects to the p2p-manager and joins an existing lobby by id.
+ *
+ * Usage:
+ *   const { lobbyId, hostId, clientId, socket } = await joinLobby(lobbyId);
+ */
+export function joinLobby(lobbyId: string): Promise<JoinLobbyResult> {
+  const baseUrl = getP2PBaseUrl();
+
+  const socket = io(baseUrl, {
+    transports: ['websocket'],
+  });
+
+  return new Promise<JoinLobbyResult>((resolve, reject) => {
+    const onError = (err: Error) => {
+      socket.off('connect_error', onError);
+      socket.off('connect', onConnect);
+      reject(err);
+    };
+
+    const onConnect = () => {
+      socket.emit('lobby:join', { lobbyId }, (payload: JoinLobbyAckPayload) => {
+        if (!payload?.ok) {
+          socket.disconnect();
+          reject(new Error(payload?.error ?? 'Failed to join lobby'));
+          return;
+        }
+
+        socket.off('connect_error', onError);
+        resolve({
+          lobbyId: payload.lobbyId,
+          hostId: payload.hostId,
+          clientId: payload.clientId,
+          socket,
+        });
+      });
     };
 
     socket.once('connect_error', onError);

@@ -34,6 +34,20 @@ interface CreateLobbyAckPayload {
   hostId: ClientId;
 }
 
+interface JoinLobbySuccessPayload {
+  ok: true;
+  lobbyId: LobbyId;
+  hostId: ClientId;
+  clientId: ClientId;
+}
+
+interface JoinLobbyErrorPayload {
+  ok: false;
+  error: string;
+}
+
+type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
+
 function handleCreateLobby(
   socket: Socket,
   ack?: (payload: CreateLobbyAckPayload) => void
@@ -66,6 +80,43 @@ function handleCreateLobby(
   socket.emit('lobby:created', payload);
 }
 
+function handleJoinLobby(
+  socket: Socket,
+  lobbyId: LobbyId,
+  ack?: (payload: JoinLobbyAckPayload) => void
+) {
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) {
+    if (ack) {
+      ack({ ok: false, error: 'Lobby not found' });
+    }
+    return;
+  }
+
+  const clientId: ClientId = socket.id;
+  lobby.participants.add(clientId);
+
+  // Join the socket.io room for this lobby so messages can be scoped per lobby
+  socket.join(lobbyId);
+
+  const payload: JoinLobbySuccessPayload = {
+    ok: true,
+    lobbyId: lobby.id,
+    hostId: lobby.hostId,
+    clientId,
+  };
+
+  if (ack) {
+    ack(payload);
+  }
+
+  // Notify all participants (including the new one) that someone joined.
+  io.to(lobbyId).emit('lobby:participant-joined', {
+    lobbyId: lobby.id,
+    clientId,
+  });
+}
+
 io.on('connection', (socket) => {
   console.log('client connected', socket.id);
 
@@ -73,6 +124,25 @@ io.on('connection', (socket) => {
   socket.on('lobby:create', (ack) => {
     handleCreateLobby(socket, ack);
   });
+
+  // Client should emit:
+  //   socket.emit('lobby:join', { lobbyId }, (response) => { ... })
+  socket.on(
+    'lobby:join',
+    (
+      data: { lobbyId?: LobbyId },
+      ack?: (payload: JoinLobbyAckPayload) => void
+    ) => {
+      const lobbyId = data?.lobbyId;
+      if (!lobbyId) {
+        if (ack) {
+          ack({ ok: false, error: 'Missing lobbyId' });
+        }
+        return;
+      }
+      handleJoinLobby(socket, lobbyId, ack);
+    }
+  );
 });
 
 const PORT = Number(process.env.PORT ?? 3002);
