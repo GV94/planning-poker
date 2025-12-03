@@ -32,6 +32,8 @@ function generateLobbyId(): LobbyId {
 interface CreateLobbyAckPayload {
   lobbyId: LobbyId;
   hostId: ClientId;
+  clientId: ClientId;
+  participants: ClientId[];
 }
 
 interface JoinLobbySuccessPayload {
@@ -39,6 +41,7 @@ interface JoinLobbySuccessPayload {
   lobbyId: LobbyId;
   hostId: ClientId;
   clientId: ClientId;
+  participants: ClientId[];
 }
 
 interface JoinLobbyErrorPayload {
@@ -66,9 +69,11 @@ function handleCreateLobby(
   // Join the socket.io room for this lobby so future events can be room-scoped
   socket.join(lobbyId);
 
-  const payload = {
+  const payload: CreateLobbyAckPayload = {
     lobbyId,
     hostId,
+    clientId: hostId,
+    participants: Array.from(lobby.participants),
   };
 
   // Notify the caller via ack (recommended pattern for request/response)
@@ -104,6 +109,7 @@ function handleJoinLobby(
     lobbyId: lobby.id,
     hostId: lobby.hostId,
     clientId,
+    participants: Array.from(lobby.participants),
   };
 
   if (ack) {

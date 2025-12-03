@@ -39,7 +39,13 @@ export function LobbyPage() {
       try {
         setSession(null);
         setError(null);
-        const { lobbyId: joinedId, hostId, socket } = await joinLobby(lobbyId);
+        const {
+          lobbyId: joinedId,
+          hostId,
+          clientId,
+          participants,
+          socket,
+        } = await joinLobby(lobbyId);
         if (cancelled) {
           socket.disconnect();
           return;
@@ -47,6 +53,8 @@ export function LobbyPage() {
         const newSession: LobbySession = {
           lobbyId: joinedId,
           hostId,
+          selfId: clientId,
+          participants,
           socket,
         };
         setLobbySession(newSession);
@@ -65,6 +73,35 @@ export function LobbyPage() {
     };
   }, [lobbyId]);
 
+  // Keep participants list in sync as others join while we're in the lobby.
+  useEffect(() => {
+    if (!session) return;
+
+    const { socket } = session;
+
+    function handleParticipantJoined(event: {
+      lobbyId: string;
+      clientId: string;
+    }) {
+      setSession((prev) => {
+        if (!prev || prev.lobbyId !== event.lobbyId) return prev;
+        if (prev.participants.includes(event.clientId)) return prev;
+        const updated: LobbySession = {
+          ...prev,
+          participants: [...prev.participants, event.clientId],
+        };
+        setLobbySession(updated);
+        return updated;
+      });
+    }
+
+    socket.on('lobby:participant-joined', handleParticipantJoined);
+
+    return () => {
+      socket.off('lobby:participant-joined', handleParticipantJoined);
+    };
+  }, [session]);
+
   if (error) {
     return <div>Failed to connect to lobby: {error}</div>;
   }
@@ -73,11 +110,23 @@ export function LobbyPage() {
     return <div>Connecting to lobby...</div>;
   }
 
+  const others = session.participants?.filter((id) => id !== session.selfId);
+
   return (
     <div>
       <h2>Lobby {session.lobbyId}</h2>
       <p>Host ID: {session.hostId}</p>
       <p>Socket ID: {session.socket.id}</p>
+      <h3>Other participants</h3>
+      {others.length === 0 ? (
+        <p>No other users yet.</p>
+      ) : (
+        <ul>
+          {others.map((id) => (
+            <li key={id}>{id}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

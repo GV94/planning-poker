@@ -3,6 +3,8 @@ import type { Socket } from 'socket.io-client';
 export interface LobbySession {
   lobbyId: string;
   hostId: string;
+  selfId: string;
+  participants: string[];
   socket: Socket;
 }
 

@@ -3,6 +3,8 @@ import { io, type Socket } from 'socket.io-client';
 export interface CreateLobbyResult {
   lobbyId: string;
   hostId: string;
+  clientId: string;
+  participants: string[];
   socket: Socket;
 }
 
@@ -10,6 +12,7 @@ export interface JoinLobbyResult {
   lobbyId: string;
   hostId: string;
   clientId: string;
+  participants: string[];
   socket: Socket;
 }
 
@@ -44,8 +47,12 @@ export function createLobby(): Promise<CreateLobbyResult> {
       // the server is responsible for generating a fresh lobbyId.
       socket.emit(
         'lobby:create',
-        // Socket.io "ack" callback: the server calls this with the created lobby info.
-        (payload: { lobbyId: string; hostId: string }) => {
+        (payload: {
+          lobbyId: string;
+          hostId: string;
+          clientId: string;
+          participants: string[];
+        }) => {
           // We successfully created a lobby, so we no longer need to listen
           // for connection errors on this initial handshake.
           socket.off('connect_error', onError);
@@ -66,6 +73,7 @@ interface JoinLobbySuccessPayload {
   lobbyId: string;
   hostId: string;
   clientId: string;
+  participants: string[];
 }
 
 interface JoinLobbyErrorPayload {
@@ -108,6 +116,7 @@ export function joinLobby(lobbyId: string): Promise<JoinLobbyResult> {
           lobbyId: payload.lobbyId,
           hostId: payload.hostId,
           clientId: payload.clientId,
+          participants: payload.participants,
           socket,
         });
       });

@@ -7,11 +7,18 @@ export function LandingPage() {
   const navigate = useNavigate();
 
   async function handleCreateLobby() {
-    const { lobbyId, hostId, socket } = await createLobby();
+    const { lobbyId, hostId, clientId, participants, socket } =
+      await createLobby();
     // Persist the live socket connection and identifiers so the lobby page
     // can reuse the same session after navigation.
     if (socket) {
-      setLobbySession({ lobbyId, hostId, socket });
+      setLobbySession({
+        lobbyId,
+        hostId,
+        selfId: clientId,
+        participants,
+        socket,
+      });
       navigate(`/lobby/${lobbyId}`);
     }
   }
