@@ -1,10 +1,15 @@
 import { io, type Socket } from 'socket.io-client';
 
+export interface ParticipantInfo {
+  clientId: string;
+  name: string;
+}
+
 export interface CreateLobbyResult {
   lobbyId: string;
   hostId: string;
   clientId: string;
-  participants: string[];
+  participants: ParticipantInfo[];
   socket: Socket;
 }
 
@@ -12,7 +17,7 @@ export interface JoinLobbyResult {
   lobbyId: string;
   hostId: string;
   clientId: string;
-  participants: string[];
+  participants: ParticipantInfo[];
   socket: Socket;
 }
 
@@ -25,9 +30,9 @@ function getP2PBaseUrl(): string {
  * Connects to the p2p-manager socket.io server and creates a new lobby.
  *
  * Usage:
- *   const { lobbyId, hostId, socket } = await createLobby();
+ *   const { lobbyId, hostId, socket } = await createLobby(name);
  */
-export function createLobby(): Promise<CreateLobbyResult> {
+export function createLobby(name: string): Promise<CreateLobbyResult> {
   const baseUrl = getP2PBaseUrl();
 
   const socket = io(baseUrl, {
@@ -43,15 +48,15 @@ export function createLobby(): Promise<CreateLobbyResult> {
 
     const onConnect = () => {
       // Once the WebSocket connection to the p2p-manager server is established,
-      // ask the server to create a new lobby. We don't send any payload here;
-      // the server is responsible for generating a fresh lobbyId.
+      // ask the server to create a new lobby, providing our display name.
       socket.emit(
         'lobby:create',
+        { name },
         (payload: {
           lobbyId: string;
           hostId: string;
           clientId: string;
-          participants: string[];
+          participants: ParticipantInfo[];
         }) => {
           // We successfully created a lobby, so we no longer need to listen
           // for connection errors on this initial handshake.
@@ -73,7 +78,7 @@ interface JoinLobbySuccessPayload {
   lobbyId: string;
   hostId: string;
   clientId: string;
-  participants: string[];
+  participants: ParticipantInfo[];
 }
 
 interface JoinLobbyErrorPayload {
@@ -87,9 +92,12 @@ type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
  * Connects to the p2p-manager and joins an existing lobby by id.
  *
  * Usage:
- *   const { lobbyId, hostId, clientId, socket } = await joinLobby(lobbyId);
+ *   const { lobbyId, hostId, clientId, socket } = await joinLobby(lobbyId, name);
  */
-export function joinLobby(lobbyId: string): Promise<JoinLobbyResult> {
+export function joinLobby(
+  lobbyId: string,
+  name: string
+): Promise<JoinLobbyResult> {
   const baseUrl = getP2PBaseUrl();
 
   const socket = io(baseUrl, {
@@ -104,22 +112,26 @@ export function joinLobby(lobbyId: string): Promise<JoinLobbyResult> {
     };
 
     const onConnect = () => {
-      socket.emit('lobby:join', { lobbyId }, (payload: JoinLobbyAckPayload) => {
-        if (!payload?.ok) {
-          socket.disconnect();
-          reject(new Error(payload?.error ?? 'Failed to join lobby'));
-          return;
-        }
+      socket.emit(
+        'lobby:join',
+        { lobbyId, name },
+        (payload: JoinLobbyAckPayload) => {
+          if (!payload?.ok) {
+            socket.disconnect();
+            reject(new Error(payload?.error ?? 'Failed to join lobby'));
+            return;
+          }
 
-        socket.off('connect_error', onError);
-        resolve({
-          lobbyId: payload.lobbyId,
-          hostId: payload.hostId,
-          clientId: payload.clientId,
-          participants: payload.participants,
-          socket,
-        });
-      });
+          socket.off('connect_error', onError);
+          resolve({
+            lobbyId: payload.lobbyId,
+            hostId: payload.hostId,
+            clientId: payload.clientId,
+            participants: payload.participants,
+            socket,
+          });
+        }
+      );
     };
 
     socket.once('connect_error', onError);

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import { Button } from '../../components/ui/button.jsx';
 import {
   getLobbySession,
   setLobbySession,
@@ -11,66 +12,25 @@ export function LobbyPage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const [session, setSession] = useState<LobbySession | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [name, setName] = useState('');
+  const [isJoining, setIsJoining] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function ensureSession() {
-      // First, try to reuse an existing in-memory session (host flow).
-      const current = getLobbySession();
-      if (current && (!lobbyId || current.lobbyId === lobbyId)) {
-        if (!cancelled) {
-          setSession(current);
-          setError(null);
-        }
-        return;
-      }
-
-      // If we don't have a stored session but we do have a lobbyId in the URL,
-      // we treat this as a "join existing lobby" flow.
-      if (!lobbyId) {
-        if (!cancelled) {
-          setError('Missing lobby id');
-          setSession(null);
-        }
-        return;
-      }
-
-      try {
-        setSession(null);
-        setError(null);
-        const {
-          lobbyId: joinedId,
-          hostId,
-          clientId,
-          participants,
-          socket,
-        } = await joinLobby(lobbyId);
-        if (cancelled) {
-          socket.disconnect();
-          return;
-        }
-        const newSession: LobbySession = {
-          lobbyId: joinedId,
-          hostId,
-          selfId: clientId,
-          participants,
-          socket,
-        };
-        setLobbySession(newSession);
-        setSession(newSession);
-      } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to join lobby');
-        }
-      }
+    // First, try to reuse an existing in-memory session (host flow).
+    const current = getLobbySession();
+    if (current && (!lobbyId || current.lobbyId === lobbyId)) {
+      setSession(current);
+      setError(null);
+      return;
     }
 
-    void ensureSession();
-
-    return () => {
-      cancelled = true;
-    };
+    // If we don't have a stored session but we do have a lobbyId in the URL,
+    // we'll show a form to let the user enter their display name and join.
+    if (!lobbyId) {
+      setError('Missing lobby id');
+      setSession(null);
+      return;
+    }
   }, [lobbyId]);
 
   // Keep participants list in sync as others join while we're in the lobby.
@@ -82,13 +42,19 @@ export function LobbyPage() {
     function handleParticipantJoined(event: {
       lobbyId: string;
       clientId: string;
+      name: string;
     }) {
       setSession((prev) => {
         if (!prev || prev.lobbyId !== event.lobbyId) return prev;
-        if (prev.participants.includes(event.clientId)) return prev;
+        if (prev.participants.some((p) => p.clientId === event.clientId)) {
+          return prev;
+        }
         const updated: LobbySession = {
           ...prev,
-          participants: [...prev.participants, event.clientId],
+          participants: [
+            ...prev.participants,
+            { clientId: event.clientId, name: event.name },
+          ],
         };
         setLobbySession(updated);
         return updated;
@@ -106,11 +72,61 @@ export function LobbyPage() {
     return <div>Failed to connect to lobby: {error}</div>;
   }
 
-  if (!session) {
-    return <div>Connecting to lobby...</div>;
+  async function handleJoinSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!lobbyId || isJoining) return;
+    setIsJoining(true);
+    setError(null);
+    try {
+      const {
+        lobbyId: joinedId,
+        hostId,
+        clientId,
+        participants,
+        socket,
+      } = await joinLobby(lobbyId, name.trim() || 'Anonymous');
+      const newSession: LobbySession = {
+        lobbyId: joinedId,
+        hostId,
+        selfId: clientId,
+        participants,
+        socket,
+      };
+      setLobbySession(newSession);
+      setSession(newSession);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to join lobby');
+    } finally {
+      setIsJoining(false);
+    }
   }
 
-  const others = session.participants?.filter((id) => id !== session.selfId);
+  if (!session) {
+    // No active session yet: show join form.
+    return (
+      <form
+        onSubmit={handleJoinSubmit}
+        className="flex flex-col items-start gap-3"
+      >
+        <h2 className="text-xl font-semibold">
+          Join lobby {lobbyId ?? '(unknown)'}
+        </h2>
+        <input
+          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-slate-400"
+          placeholder="Your display name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <Button type="submit" disabled={isJoining}>
+          {isJoining ? 'Joining...' : 'Join lobby'}
+        </Button>
+      </form>
+    );
+  }
+
+  const others = session.participants?.filter(
+    (p) => p.clientId !== session.selfId
+  );
 
   return (
     <div>
@@ -122,8 +138,8 @@ export function LobbyPage() {
         <p>No other users yet.</p>
       ) : (
         <ul>
-          {others.map((id) => (
-            <li key={id}>{id}</li>
+          {others.map((p) => (
+            <li key={p.clientId}>{p.name}</li>
           ))}
         </ul>
       )}

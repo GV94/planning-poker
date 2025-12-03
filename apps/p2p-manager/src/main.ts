@@ -5,10 +5,15 @@ import { Server, type Socket } from 'socket.io';
 type LobbyId = string;
 type ClientId = string;
 
+interface ParticipantInfo {
+  clientId: ClientId;
+  name: string;
+}
+
 interface Lobby {
   id: LobbyId;
   hostId: ClientId;
-  participants: Set<ClientId>;
+  participants: Map<ClientId, ParticipantInfo>;
 }
 
 const lobbies = new Map<LobbyId, Lobby>();
@@ -33,7 +38,7 @@ interface CreateLobbyAckPayload {
   lobbyId: LobbyId;
   hostId: ClientId;
   clientId: ClientId;
-  participants: ClientId[];
+  participants: ParticipantInfo[];
 }
 
 interface JoinLobbySuccessPayload {
@@ -41,7 +46,7 @@ interface JoinLobbySuccessPayload {
   lobbyId: LobbyId;
   hostId: ClientId;
   clientId: ClientId;
-  participants: ClientId[];
+  participants: ParticipantInfo[];
 }
 
 interface JoinLobbyErrorPayload {
@@ -50,18 +55,36 @@ interface JoinLobbyErrorPayload {
 }
 
 type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
+function normalizeName(name?: string): string {
+  const trimmed = name?.trim();
+  return trimmed && trimmed.length > 0 ? trimmed : 'Anonymous';
+}
+
+function serializeParticipants(lobby: Lobby): ParticipantInfo[] {
+  return Array.from(lobby.participants.values());
+}
 
 function handleCreateLobby(
   socket: Socket,
+  data: { name?: string } | undefined,
   ack?: (payload: CreateLobbyAckPayload) => void
 ) {
   const lobbyId = generateLobbyId();
   const hostId: ClientId = socket.id;
+  const hostName = normalizeName(data?.name);
 
   const lobby: Lobby = {
     id: lobbyId,
     hostId,
-    participants: new Set<ClientId>([hostId]),
+    participants: new Map<ClientId, ParticipantInfo>([
+      [
+        hostId,
+        {
+          clientId: hostId,
+          name: hostName,
+        },
+      ],
+    ]),
   };
 
   lobbies.set(lobbyId, lobby);
@@ -73,7 +96,7 @@ function handleCreateLobby(
     lobbyId,
     hostId,
     clientId: hostId,
-    participants: Array.from(lobby.participants),
+    participants: serializeParticipants(lobby),
   };
 
   // Notify the caller via ack (recommended pattern for request/response)
@@ -88,6 +111,7 @@ function handleCreateLobby(
 function handleJoinLobby(
   socket: Socket,
   lobbyId: LobbyId,
+  name: string | undefined,
   ack?: (payload: JoinLobbyAckPayload) => void
 ) {
   const lobby = lobbies.get(lobbyId);
@@ -99,7 +123,8 @@ function handleJoinLobby(
   }
 
   const clientId: ClientId = socket.id;
-  lobby.participants.add(clientId);
+  const displayName = normalizeName(name);
+  lobby.participants.set(clientId, { clientId, name: displayName });
 
   // Join the socket.io room for this lobby so messages can be scoped per lobby
   socket.join(lobbyId);
@@ -109,7 +134,7 @@ function handleJoinLobby(
     lobbyId: lobby.id,
     hostId: lobby.hostId,
     clientId,
-    participants: Array.from(lobby.participants),
+    participants: serializeParticipants(lobby),
   };
 
   if (ack) {
@@ -120,23 +145,31 @@ function handleJoinLobby(
   io.to(lobbyId).emit('lobby:participant-joined', {
     lobbyId: lobby.id,
     clientId,
+    name: displayName,
   });
 }
 
 io.on('connection', (socket) => {
   console.log('client connected', socket.id);
 
-  // Client should emit: socket.emit('lobby:create', (response) => { ... })
-  socket.on('lobby:create', (ack) => {
-    handleCreateLobby(socket, ack);
-  });
+  // Client should emit:
+  //   socket.emit('lobby:create', { name }, (response) => { ... })
+  socket.on(
+    'lobby:create',
+    (
+      data: { name?: string } | undefined,
+      ack?: (payload: CreateLobbyAckPayload) => void
+    ) => {
+      handleCreateLobby(socket, data, ack);
+    }
+  );
 
   // Client should emit:
-  //   socket.emit('lobby:join', { lobbyId }, (response) => { ... })
+  //   socket.emit('lobby:join', { lobbyId, name }, (response) => { ... })
   socket.on(
     'lobby:join',
     (
-      data: { lobbyId?: LobbyId },
+      data: { lobbyId?: LobbyId; name?: string },
       ack?: (payload: JoinLobbyAckPayload) => void
     ) => {
       const lobbyId = data?.lobbyId;
@@ -146,7 +179,7 @@ io.on('connection', (socket) => {
         }
         return;
       }
-      handleJoinLobby(socket, lobbyId, ack);
+      handleJoinLobby(socket, lobbyId, data?.name, ack);
     }
   );
 });

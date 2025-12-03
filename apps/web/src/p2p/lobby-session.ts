@@ -1,10 +1,11 @@
 import type { Socket } from 'socket.io-client';
+import type { ParticipantInfo } from './lobby-connection.js';
 
 export interface LobbySession {
   lobbyId: string;
   hostId: string;
   selfId: string;
-  participants: string[];
+  participants: ParticipantInfo[];
   socket: Socket;
 }
 
