@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/button.jsx';
 import { createLobby } from '../../p2p/lobby-connection.js';
-import { setLobbySession } from '../../p2p/lobby-session.js';
+import { saveClientSession, setLobbySession } from '../../p2p/lobby-session.js';
 
 export function LandingPage() {
   const navigate = useNavigate();
@@ -24,6 +24,7 @@ export function LandingPage() {
         isRevealed,
         socket,
       });
+      saveClientSession({ lobbyId, name: trimmedName, clientId });
       navigate(`/lobby/${lobbyId}`);
     }
   }

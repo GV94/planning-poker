@@ -3,6 +3,8 @@ import { useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/button.jsx';
 import {
   getLobbySession,
+  loadClientSession,
+  saveClientSession,
   setLobbySession,
   type LobbySession,
 } from '../../p2p/lobby-session.js';
@@ -18,7 +20,10 @@ export function LobbyPage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const [session, setSession] = useState<LobbySession | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(() => {
+    const stored = loadClientSession();
+    return stored?.name ?? '';
+  });
   const [isJoining, setIsJoining] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
@@ -40,21 +45,72 @@ export function LobbyPage() {
   ];
 
   useEffect(() => {
-    // First, try to reuse an existing in-memory session (host flow).
-    const current = getLobbySession();
-    if (current && (!lobbyId || current.lobbyId === lobbyId)) {
-      setSession(current);
-      setError(null);
-      return;
+    let cancelled = false;
+
+    async function ensureSession() {
+      // First, try to reuse an existing in-memory session (host flow).
+      const current = getLobbySession();
+      if (current && (!lobbyId || current.lobbyId === lobbyId)) {
+        if (!cancelled) {
+          setSession(current);
+          setError(null);
+        }
+        return;
+      }
+
+      if (!lobbyId) {
+        if (!cancelled) {
+          setError('Missing lobby id');
+          setSession(null);
+        }
+        return;
+      }
+
+      // If we have a stored client session for this lobby, automatically rejoin
+      // without showing the join form (e.g. after a page refresh).
+      const stored = loadClientSession();
+      if (stored && stored.lobbyId === lobbyId) {
+        const displayName = stored.name.trim() || 'Anonymous';
+        setName(displayName);
+        try {
+          const {
+            lobbyId: joinedId,
+            hostId,
+            clientId,
+            participants,
+            isRevealed,
+            socket,
+          } = await joinLobby(lobbyId, displayName, stored.clientId);
+          if (cancelled) {
+            socket.disconnect();
+            return;
+          }
+          const newSession: LobbySession = {
+            lobbyId: joinedId,
+            hostId,
+            selfId: clientId,
+            participants,
+            isRevealed,
+            socket,
+          };
+          setLobbySession(newSession);
+          setSession(newSession);
+          setError(null);
+        } catch (err) {
+          if (!cancelled) {
+            setError(
+              err instanceof Error ? err.message : 'Failed to rejoin lobby'
+            );
+          }
+        }
+      }
     }
 
-    // If we don't have a stored session but we do have a lobbyId in the URL,
-    // we'll show a form to let the user enter their display name and join.
-    if (!lobbyId) {
-      setError('Missing lobby id');
-      setSession(null);
-      return;
-    }
+    void ensureSession();
+
+    return () => {
+      cancelled = true;
+    };
   }, [lobbyId]);
 
   // Keep participants list in sync as others join / vote while we're in the lobby.
@@ -173,6 +229,11 @@ export function LobbyPage() {
       };
       setLobbySession(newSession);
       setSession(newSession);
+      saveClientSession({
+        lobbyId: joinedId,
+        name: name.trim() || 'Anonymous',
+        clientId,
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to join lobby');
     } finally {

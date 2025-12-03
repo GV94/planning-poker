@@ -103,7 +103,8 @@ type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
  */
 export function joinLobby(
   lobbyId: string,
-  name: string
+  name: string,
+  clientId?: string
 ): Promise<JoinLobbyResult> {
   const baseUrl = getP2PBaseUrl();
 
@@ -121,7 +122,7 @@ export function joinLobby(
     const onConnect = () => {
       socket.emit(
         'lobby:join',
-        { lobbyId, name },
+        { lobbyId, name, clientId },
         (payload: JoinLobbyAckPayload) => {
           if (!payload?.ok) {
             socket.disconnect();
