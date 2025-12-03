@@ -70,7 +70,7 @@ export function LobbyPage() {
           ...prev,
           participants: [
             ...prev.participants,
-            { clientId: event.clientId, name: event.name },
+            { clientId: event.clientId, name: event.name, isAdmin: false },
           ],
         };
         setLobbySession(updated);
@@ -206,7 +206,9 @@ export function LobbyPage() {
         <ul>
           {others.map((p) => (
             <li key={p.clientId}>
-              {p.name} {p.vote != null ? `(${p.vote})` : ''}
+              {p.name}
+              {p.isAdmin ? ' (admin)' : ''}
+              {p.vote != null ? ` (${p.vote})` : ''}
             </li>
           ))}
         </ul>

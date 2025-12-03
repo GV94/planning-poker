@@ -7,6 +7,7 @@ interface ParticipantInfo {
   clientId: ClientId;
   name: string;
   vote?: PlanningPokerCard;
+  isAdmin: boolean;
 }
 
 interface Lobby {
@@ -92,6 +93,7 @@ function handleCreateLobby(
         {
           clientId: hostId,
           name: hostName,
+          isAdmin: true,
         },
       ],
     ]),
@@ -134,7 +136,11 @@ function handleJoinLobby(
 
   const clientId: ClientId = socket.id;
   const displayName = normalizeName(name);
-  lobby.participants.set(clientId, { clientId, name: displayName });
+  lobby.participants.set(clientId, {
+    clientId,
+    name: displayName,
+    isAdmin: false,
+  });
 
   // Join the socket.io room for this lobby so messages can be scoped per lobby
   socket.join(lobbyId);

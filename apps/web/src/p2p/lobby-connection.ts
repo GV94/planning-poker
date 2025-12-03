@@ -5,6 +5,7 @@ export interface ParticipantInfo {
   clientId: string;
   name: string;
   vote?: PlanningPokerCard;
+  isAdmin: boolean;
 }
 
 export interface CreateLobbyResult {
