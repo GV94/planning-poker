@@ -1,5 +1,8 @@
 import { createServer } from 'http';
 import { randomUUID } from 'crypto';
+// Typed import is declared in a local ambient module in this app to avoid
+// depending on external type packages.
+import { createClient, type RedisClientType } from 'redis';
 import { Server, type Socket } from 'socket.io';
 import type { LobbyId, ClientId, PlanningPokerCard } from 'shared-types';
 
@@ -18,6 +21,17 @@ interface Lobby {
 }
 
 const lobbies = new Map<LobbyId, Lobby>();
+
+const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
+const redis: RedisClientType = createClient({ url: redisUrl });
+
+redis.on('error', (err: unknown) => {
+  console.error('Redis client error', err);
+});
+
+redis.connect().catch((err: unknown) => {
+  console.error('Failed to connect to Redis at', redisUrl, err);
+});
 
 const httpServer = createServer();
 const io = new Server(httpServer, {
@@ -91,6 +105,19 @@ interface ResetErrorPayload {
 }
 
 type ResetAckPayload = ResetSuccessPayload | ResetErrorPayload;
+
+interface StoredLobby {
+  id: LobbyId;
+  hostId: ClientId;
+  participants: ParticipantInfo[];
+  isRevealed: boolean;
+}
+
+const LOBBY_KEY_PREFIX = 'lobby:';
+
+function lobbyKey(id: LobbyId): string {
+  return `${LOBBY_KEY_PREFIX}${id}`;
+}
 function normalizeName(name?: string): string {
   const trimmed = name?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : 'Anonymous';
@@ -100,7 +127,51 @@ function serializeParticipants(lobby: Lobby): ParticipantInfo[] {
   return Array.from(lobby.participants.values());
 }
 
-function handleCreateLobby(
+function toStoredLobby(lobby: Lobby): StoredLobby {
+  return {
+    id: lobby.id,
+    hostId: lobby.hostId,
+    isRevealed: lobby.isRevealed,
+    participants: serializeParticipants(lobby),
+  };
+}
+
+function fromStoredLobby(stored: StoredLobby): Lobby {
+  return {
+    id: stored.id,
+    hostId: stored.hostId,
+    isRevealed: stored.isRevealed,
+    participants: new Map<ClientId, ParticipantInfo>(
+      stored.participants.map((p) => [p.clientId, p])
+    ),
+  };
+}
+
+async function saveLobby(lobby: Lobby): Promise<void> {
+  const stored = toStoredLobby(lobby);
+  await redis.set(lobbyKey(lobby.id), JSON.stringify(stored));
+}
+
+async function loadLobby(lobbyId: LobbyId): Promise<Lobby | null> {
+  const cached = lobbies.get(lobbyId);
+  if (cached) return cached;
+
+  const raw = await redis.get(lobbyKey(lobbyId));
+  if (!raw) return null;
+
+  let parsed: StoredLobby;
+  try {
+    parsed = JSON.parse(raw) as StoredLobby;
+  } catch {
+    return null;
+  }
+
+  const lobby = fromStoredLobby(parsed);
+  lobbies.set(lobbyId, lobby);
+  return lobby;
+}
+
+async function handleCreateLobby(
   socket: Socket,
   data: { name?: string } | undefined,
   ack?: (payload: CreateLobbyAckPayload) => void
@@ -126,6 +197,7 @@ function handleCreateLobby(
   };
 
   lobbies.set(lobbyId, lobby);
+  await saveLobby(lobby);
 
   // Join the socket.io room for this lobby so future events can be room-scoped
   socket.join(lobbyId);
@@ -147,13 +219,13 @@ function handleCreateLobby(
   socket.emit('lobby:created', payload);
 }
 
-function handleJoinLobby(
+async function handleJoinLobby(
   socket: Socket,
   lobbyId: LobbyId,
   name: string | undefined,
   ack?: (payload: JoinLobbyAckPayload) => void
 ) {
-  const lobby = lobbies.get(lobbyId);
+  const lobby = await loadLobby(lobbyId);
   if (!lobby) {
     if (ack) {
       ack({ ok: false, error: 'Lobby not found' });
@@ -191,9 +263,10 @@ function handleJoinLobby(
     clientId,
     name: displayName,
   });
+  await saveLobby(lobby);
 }
 
-function handleVote(
+async function handleVote(
   socket: Socket,
   data: { lobbyId?: LobbyId; card: PlanningPokerCard | null },
   ack?: (payload: VoteAckPayload) => void
@@ -206,7 +279,7 @@ function handleVote(
     return;
   }
 
-  const lobby = lobbies.get(lobbyId);
+  const lobby = await loadLobby(lobbyId);
   if (!lobby) {
     if (ack) {
       ack({ ok: false, error: 'Lobby not found' });
@@ -238,7 +311,7 @@ function handleVote(
   }
 }
 
-function handleReveal(
+async function handleReveal(
   socket: Socket,
   data: { lobbyId?: LobbyId },
   ack?: (payload: RevealAckPayload) => void
@@ -251,7 +324,7 @@ function handleReveal(
     return;
   }
 
-  const lobby = lobbies.get(lobbyId);
+  const lobby = await loadLobby(lobbyId);
   if (!lobby) {
     if (ack) {
       ack({ ok: false, error: 'Lobby not found' });
@@ -282,7 +355,7 @@ function handleReveal(
   }
 }
 
-function handleReset(
+async function handleReset(
   socket: Socket,
   data: { lobbyId?: LobbyId },
   ack?: (payload: ResetAckPayload) => void
@@ -295,7 +368,7 @@ function handleReset(
     return;
   }
 
-  const lobby = lobbies.get(lobbyId);
+  const lobby = await loadLobby(lobbyId);
   if (!lobby) {
     if (ack) {
       ack({ ok: false, error: 'Lobby not found' });
@@ -335,7 +408,7 @@ io.on('connection', (socket) => {
       data: { name?: string } | undefined,
       ack?: (payload: CreateLobbyAckPayload) => void
     ) => {
-      handleCreateLobby(socket, data, ack);
+      void handleCreateLobby(socket, data, ack);
     }
   );
 
@@ -354,7 +427,7 @@ io.on('connection', (socket) => {
         }
         return;
       }
-      handleJoinLobby(socket, lobbyId, data?.name, ack);
+      void handleJoinLobby(socket, lobbyId, data?.name, ack);
     }
   );
 
@@ -366,7 +439,7 @@ io.on('connection', (socket) => {
       data: { lobbyId?: LobbyId; card: PlanningPokerCard | null },
       ack?: (payload: VoteAckPayload) => void
     ) => {
-      handleVote(socket, data, ack);
+      void handleVote(socket, data, ack);
     }
   );
 
@@ -375,7 +448,7 @@ io.on('connection', (socket) => {
   socket.on(
     'lobby:reveal',
     (data: { lobbyId?: LobbyId }, ack?: (payload: RevealAckPayload) => void) =>
-      handleReveal(socket, data, ack)
+      void handleReveal(socket, data, ack)
   );
 
   // Client should emit:
@@ -383,7 +456,7 @@ io.on('connection', (socket) => {
   socket.on(
     'lobby:reset',
     (data: { lobbyId?: LobbyId }, ack?: (payload: ResetAckPayload) => void) =>
-      handleReset(socket, data, ack)
+      void handleReset(socket, data, ack)
   );
 });
 
