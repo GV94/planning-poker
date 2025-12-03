@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/button.jsx';
 import {
@@ -6,7 +6,8 @@ import {
   setLobbySession,
   type LobbySession,
 } from '../../p2p/lobby-session.js';
-import { joinLobby } from '../../p2p/lobby-connection.js';
+import { castVote, joinLobby } from '../../p2p/lobby-connection.js';
+import type { PlanningPokerCard } from 'shared-types';
 
 export function LobbyPage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
@@ -14,6 +15,22 @@ export function LobbyPage() {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+
+  const CARDS: PlanningPokerCard[] = [
+    0,
+    0.5,
+    1,
+    2,
+    3,
+    5,
+    8,
+    13,
+    21,
+    34,
+    55,
+    100,
+    '?',
+  ];
 
   useEffect(() => {
     // First, try to reuse an existing in-memory session (host flow).
@@ -33,7 +50,7 @@ export function LobbyPage() {
     }
   }, [lobbyId]);
 
-  // Keep participants list in sync as others join while we're in the lobby.
+  // Keep participants list in sync as others join / vote while we're in the lobby.
   useEffect(() => {
     if (!session) return;
 
@@ -61,10 +78,33 @@ export function LobbyPage() {
       });
     }
 
+    function handleVoted(event: {
+      lobbyId: string;
+      clientId: string;
+      card: PlanningPokerCard | null;
+    }) {
+      setSession((prev) => {
+        if (!prev || prev.lobbyId !== event.lobbyId) return prev;
+        const updatedParticipants = prev.participants.map((p) =>
+          p.clientId === event.clientId
+            ? { ...p, vote: event.card ?? undefined }
+            : p
+        );
+        const updated: LobbySession = {
+          ...prev,
+          participants: updatedParticipants,
+        };
+        setLobbySession(updated);
+        return updated;
+      });
+    }
+
     socket.on('lobby:participant-joined', handleParticipantJoined);
+    socket.on('lobby:voted', handleVoted);
 
     return () => {
       socket.off('lobby:participant-joined', handleParticipantJoined);
+      socket.off('lobby:voted', handleVoted);
     };
   }, [session]);
 
@@ -72,7 +112,7 @@ export function LobbyPage() {
     return <div>Failed to connect to lobby: {error}</div>;
   }
 
-  async function handleJoinSubmit(event: React.FormEvent) {
+  async function handleJoinSubmit(event: FormEvent) {
     event.preventDefault();
     if (!lobbyId || isJoining) return;
     setIsJoining(true);
@@ -124,6 +164,16 @@ export function LobbyPage() {
     );
   }
 
+  async function handleVote(card: PlanningPokerCard | null) {
+    try {
+      if (!session) return;
+      await castVote(session.socket, session.lobbyId, card);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to cast vote');
+    }
+  }
+
+  const self = session.participants.find((p) => p.clientId === session.selfId);
   const others = session.participants?.filter(
     (p) => p.clientId !== session.selfId
   );
@@ -133,13 +183,31 @@ export function LobbyPage() {
       <h2>Lobby {session.lobbyId}</h2>
       <p>Host ID: {session.hostId}</p>
       <p>Socket ID: {session.socket.id}</p>
+      <div className="mt-4">
+        <h3 className="mb-2 font-medium">Your vote</h3>
+        <div className="flex flex-wrap gap-2">
+          {CARDS.map((card) => (
+            <Button
+              key={card}
+              type="button"
+              variant={self?.vote === card ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => handleVote(card)}
+            >
+              {card}
+            </Button>
+          ))}
+        </div>
+      </div>
       <h3>Other participants</h3>
       {others.length === 0 ? (
         <p>No other users yet.</p>
       ) : (
         <ul>
           {others.map((p) => (
-            <li key={p.clientId}>{p.name}</li>
+            <li key={p.clientId}>
+              {p.name} {p.vote != null ? `(${p.vote})` : ''}
+            </li>
           ))}
         </ul>
       )}

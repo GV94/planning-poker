@@ -1,13 +1,12 @@
 import { createServer } from 'http';
 import { randomUUID } from 'crypto';
 import { Server, type Socket } from 'socket.io';
-
-type LobbyId = string;
-type ClientId = string;
+import type { LobbyId, ClientId, PlanningPokerCard } from 'shared-types';
 
 interface ParticipantInfo {
   clientId: ClientId;
   name: string;
+  vote?: PlanningPokerCard;
 }
 
 interface Lobby {
@@ -55,6 +54,17 @@ interface JoinLobbyErrorPayload {
 }
 
 type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
+
+interface VoteSuccessPayload {
+  ok: true;
+}
+
+interface VoteErrorPayload {
+  ok: false;
+  error: string;
+}
+
+type VoteAckPayload = VoteSuccessPayload | VoteErrorPayload;
 function normalizeName(name?: string): string {
   const trimmed = name?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : 'Anonymous';
@@ -149,6 +159,51 @@ function handleJoinLobby(
   });
 }
 
+function handleVote(
+  socket: Socket,
+  data: { lobbyId?: LobbyId; card: PlanningPokerCard | null },
+  ack?: (payload: VoteAckPayload) => void
+) {
+  const lobbyId = data.lobbyId;
+  if (!lobbyId) {
+    if (ack) {
+      ack({ ok: false, error: 'Missing lobbyId' });
+    }
+    return;
+  }
+
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) {
+    if (ack) {
+      ack({ ok: false, error: 'Lobby not found' });
+    }
+    return;
+  }
+
+  const clientId: ClientId = socket.id;
+  const participant = lobby.participants.get(clientId);
+  if (!participant) {
+    if (ack) {
+      ack({ ok: false, error: 'Not a participant in this lobby' });
+    }
+    return;
+  }
+
+  participant.vote = data.card ?? undefined;
+
+  const eventPayload = {
+    lobbyId,
+    clientId,
+    card: data.card,
+  };
+
+  io.to(lobbyId).emit('lobby:voted', eventPayload);
+
+  if (ack) {
+    ack({ ok: true });
+  }
+}
+
 io.on('connection', (socket) => {
   console.log('client connected', socket.id);
 
@@ -180,6 +235,18 @@ io.on('connection', (socket) => {
         return;
       }
       handleJoinLobby(socket, lobbyId, data?.name, ack);
+    }
+  );
+
+  // Client should emit:
+  //   socket.emit('lobby:vote', { lobbyId, card }, (response) => { ... })
+  socket.on(
+    'lobby:vote',
+    (
+      data: { lobbyId?: LobbyId; card: PlanningPokerCard | null },
+      ack?: (payload: VoteAckPayload) => void
+    ) => {
+      handleVote(socket, data, ack);
     }
   );
 });

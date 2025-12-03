@@ -1,8 +1,10 @@
 import { io, type Socket } from 'socket.io-client';
+import type { PlanningPokerCard } from 'shared-types';
 
 export interface ParticipantInfo {
   clientId: string;
   name: string;
+  vote?: PlanningPokerCard;
 }
 
 export interface CreateLobbyResult {
@@ -136,5 +138,25 @@ export function joinLobby(
 
     socket.once('connect_error', onError);
     socket.once('connect', onConnect);
+  });
+}
+
+export function castVote(
+  socket: Socket,
+  lobbyId: string,
+  card: PlanningPokerCard | null
+): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    socket.emit(
+      'lobby:vote',
+      { lobbyId, card },
+      (payload?: { ok: boolean; error?: string }) => {
+        if (!payload?.ok) {
+          reject(new Error(payload?.error ?? 'Failed to cast vote'));
+          return;
+        }
+        resolve();
+      }
+    );
   });
 }
