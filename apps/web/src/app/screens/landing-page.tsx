@@ -11,7 +11,7 @@ export function LandingPage() {
   async function handleCreateLobby() {
     const trimmedName = name.trim() || 'Anonymous';
 
-    const { lobbyId, hostId, clientId, participants, socket } =
+    const { lobbyId, hostId, clientId, participants, isRevealed, socket } =
       await createLobby(trimmedName);
     // Persist the live socket connection and identifiers so the lobby page
     // can reuse the same session after navigation.
@@ -21,6 +21,7 @@ export function LandingPage() {
         hostId,
         selfId: clientId,
         participants,
+        isRevealed,
         socket,
       });
       navigate(`/lobby/${lobbyId}`);

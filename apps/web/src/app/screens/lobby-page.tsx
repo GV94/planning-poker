@@ -6,7 +6,11 @@ import {
   setLobbySession,
   type LobbySession,
 } from '../../p2p/lobby-session.js';
-import { castVote, joinLobby } from '../../p2p/lobby-connection.js';
+import {
+  castVote,
+  joinLobby,
+  revealCards,
+} from '../../p2p/lobby-connection.js';
 import type { PlanningPokerCard } from 'shared-types';
 
 export function LobbyPage() {
@@ -15,6 +19,7 @@ export function LobbyPage() {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [isRevealing, setIsRevealing] = useState(false);
 
   const CARDS: PlanningPokerCard[] = [
     0,
@@ -99,12 +104,23 @@ export function LobbyPage() {
       });
     }
 
+    function handleRevealed(event: { lobbyId: string }) {
+      setSession((prev) => {
+        if (!prev || prev.lobbyId !== event.lobbyId) return prev;
+        const updated: LobbySession = { ...prev, isRevealed: true };
+        setLobbySession(updated);
+        return updated;
+      });
+    }
+
     socket.on('lobby:participant-joined', handleParticipantJoined);
     socket.on('lobby:voted', handleVoted);
+    socket.on('lobby:revealed', handleRevealed);
 
     return () => {
       socket.off('lobby:participant-joined', handleParticipantJoined);
       socket.off('lobby:voted', handleVoted);
+      socket.off('lobby:revealed', handleRevealed);
     };
   }, [session]);
 
@@ -123,6 +139,7 @@ export function LobbyPage() {
         hostId,
         clientId,
         participants,
+        isRevealed,
         socket,
       } = await joinLobby(lobbyId, name.trim() || 'Anonymous');
       const newSession: LobbySession = {
@@ -130,6 +147,7 @@ export function LobbyPage() {
         hostId,
         selfId: clientId,
         participants,
+        isRevealed,
         socket,
       };
       setLobbySession(newSession);
@@ -177,12 +195,38 @@ export function LobbyPage() {
   const others = session.participants?.filter(
     (p) => p.clientId !== session.selfId
   );
+  const isAdmin = self?.isAdmin ?? false;
+
+  async function handleReveal() {
+    try {
+      if (!session) return;
+      setIsRevealing(true);
+      await revealCards(session.socket, session.lobbyId);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to reveal votes');
+    } finally {
+      setIsRevealing(false);
+    }
+  }
 
   return (
     <div>
       <h2>Lobby {session.lobbyId}</h2>
       <p>Host ID: {session.hostId}</p>
       <p>Socket ID: {session.socket.id}</p>
+      {isAdmin && (
+        <div className="mt-4">
+          <Button
+            type="button"
+            variant={session.isRevealed ? 'outline' : 'default'}
+            size="sm"
+            disabled={session.isRevealed || isRevealing}
+            onClick={handleReveal}
+          >
+            {session.isRevealed ? 'Votes revealed' : 'Reveal votes'}
+          </Button>
+        </div>
+      )}
       <div className="mt-4">
         <h3 className="mb-2 font-medium">Your vote</h3>
         <div className="flex flex-wrap gap-2">
@@ -207,8 +251,12 @@ export function LobbyPage() {
           {others.map((p) => (
             <li key={p.clientId}>
               {p.name}
-              {p.isAdmin ? ' (admin)' : ''}
-              {p.vote != null ? ` (${p.vote})` : ''}
+              {p.isAdmin ? ' (admin)' : ''}{' '}
+              {p.vote == null
+                ? '-'
+                : session.isRevealed
+                ? `(${p.vote})`
+                : 'voted'}
             </li>
           ))}
         </ul>

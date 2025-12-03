@@ -13,6 +13,7 @@ export interface CreateLobbyResult {
   hostId: string;
   clientId: string;
   participants: ParticipantInfo[];
+  isRevealed: boolean;
   socket: Socket;
 }
 
@@ -21,6 +22,7 @@ export interface JoinLobbyResult {
   hostId: string;
   clientId: string;
   participants: ParticipantInfo[];
+  isRevealed: boolean;
   socket: Socket;
 }
 
@@ -60,6 +62,7 @@ export function createLobby(name: string): Promise<CreateLobbyResult> {
           hostId: string;
           clientId: string;
           participants: ParticipantInfo[];
+          isRevealed: boolean;
         }) => {
           // We successfully created a lobby, so we no longer need to listen
           // for connection errors on this initial handshake.
@@ -82,6 +85,7 @@ interface JoinLobbySuccessPayload {
   hostId: string;
   clientId: string;
   participants: ParticipantInfo[];
+  isRevealed: boolean;
 }
 
 interface JoinLobbyErrorPayload {
@@ -131,6 +135,7 @@ export function joinLobby(
             hostId: payload.hostId,
             clientId: payload.clientId,
             participants: payload.participants,
+            isRevealed: payload.isRevealed,
             socket,
           });
         }
@@ -154,6 +159,22 @@ export function castVote(
       (payload?: { ok: boolean; error?: string }) => {
         if (!payload?.ok) {
           reject(new Error(payload?.error ?? 'Failed to cast vote'));
+          return;
+        }
+        resolve();
+      }
+    );
+  });
+}
+
+export function revealCards(socket: Socket, lobbyId: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    socket.emit(
+      'lobby:reveal',
+      { lobbyId },
+      (payload?: { ok: boolean; error?: string }) => {
+        if (!payload?.ok) {
+          reject(new Error(payload?.error ?? 'Failed to reveal votes'));
           return;
         }
         resolve();

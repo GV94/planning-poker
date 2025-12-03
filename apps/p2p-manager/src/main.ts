@@ -14,6 +14,7 @@ interface Lobby {
   id: LobbyId;
   hostId: ClientId;
   participants: Map<ClientId, ParticipantInfo>;
+  isRevealed: boolean;
 }
 
 const lobbies = new Map<LobbyId, Lobby>();
@@ -39,6 +40,7 @@ interface CreateLobbyAckPayload {
   hostId: ClientId;
   clientId: ClientId;
   participants: ParticipantInfo[];
+  isRevealed: boolean;
 }
 
 interface JoinLobbySuccessPayload {
@@ -47,6 +49,7 @@ interface JoinLobbySuccessPayload {
   hostId: ClientId;
   clientId: ClientId;
   participants: ParticipantInfo[];
+  isRevealed: boolean;
 }
 
 interface JoinLobbyErrorPayload {
@@ -66,6 +69,17 @@ interface VoteErrorPayload {
 }
 
 type VoteAckPayload = VoteSuccessPayload | VoteErrorPayload;
+
+interface RevealSuccessPayload {
+  ok: true;
+}
+
+interface RevealErrorPayload {
+  ok: false;
+  error: string;
+}
+
+type RevealAckPayload = RevealSuccessPayload | RevealErrorPayload;
 function normalizeName(name?: string): string {
   const trimmed = name?.trim();
   return trimmed && trimmed.length > 0 ? trimmed : 'Anonymous';
@@ -97,6 +111,7 @@ function handleCreateLobby(
         },
       ],
     ]),
+    isRevealed: false,
   };
 
   lobbies.set(lobbyId, lobby);
@@ -109,6 +124,7 @@ function handleCreateLobby(
     hostId,
     clientId: hostId,
     participants: serializeParticipants(lobby),
+    isRevealed: lobby.isRevealed,
   };
 
   // Notify the caller via ack (recommended pattern for request/response)
@@ -151,6 +167,7 @@ function handleJoinLobby(
     hostId: lobby.hostId,
     clientId,
     participants: serializeParticipants(lobby),
+    isRevealed: lobby.isRevealed,
   };
 
   if (ack) {
@@ -210,6 +227,50 @@ function handleVote(
   }
 }
 
+function handleReveal(
+  socket: Socket,
+  data: { lobbyId?: LobbyId },
+  ack?: (payload: RevealAckPayload) => void
+) {
+  const lobbyId = data.lobbyId;
+  if (!lobbyId) {
+    if (ack) {
+      ack({ ok: false, error: 'Missing lobbyId' });
+    }
+    return;
+  }
+
+  const lobby = lobbies.get(lobbyId);
+  if (!lobby) {
+    if (ack) {
+      ack({ ok: false, error: 'Lobby not found' });
+    }
+    return;
+  }
+
+  const clientId: ClientId = socket.id;
+  if (clientId !== lobby.hostId) {
+    if (ack) {
+      ack({ ok: false, error: 'Only the lobby owner can reveal votes' });
+    }
+    return;
+  }
+
+  if (lobby.isRevealed) {
+    if (ack) {
+      ack({ ok: true });
+    }
+    return;
+  }
+
+  lobby.isRevealed = true;
+  io.to(lobbyId).emit('lobby:revealed', { lobbyId });
+
+  if (ack) {
+    ack({ ok: true });
+  }
+}
+
 io.on('connection', (socket) => {
   console.log('client connected', socket.id);
 
@@ -254,6 +315,14 @@ io.on('connection', (socket) => {
     ) => {
       handleVote(socket, data, ack);
     }
+  );
+
+  // Client should emit:
+  //   socket.emit('lobby:reveal', { lobbyId }, (response) => { ... })
+  socket.on(
+    'lobby:reveal',
+    (data: { lobbyId?: LobbyId }, ack?: (payload: RevealAckPayload) => void) =>
+      handleReveal(socket, data, ack)
   );
 });
 

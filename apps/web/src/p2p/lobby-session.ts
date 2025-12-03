@@ -6,6 +6,7 @@ export interface LobbySession {
   hostId: string;
   selfId: string;
   participants: ParticipantInfo[];
+  isRevealed: boolean;
   socket: Socket;
 }
 
