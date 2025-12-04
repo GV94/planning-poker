@@ -199,3 +199,33 @@ export function resetLobby(socket: Socket, lobbyId: string): Promise<void> {
     );
   });
 }
+
+export function lobbyExists(lobbyId: string): Promise<boolean> {
+  const baseUrl = getP2PBaseUrl();
+  const socket = io(baseUrl, {
+    transports: ['websocket'],
+  });
+
+  return new Promise<boolean>((resolve, reject) => {
+    const onError = () => {
+      socket.off('connect_error', onError);
+      socket.disconnect();
+      resolve(false);
+    };
+
+    const onConnect = () => {
+      socket.emit(
+        'lobby:exists',
+        { lobbyId },
+        (payload?: { ok: boolean }) => {
+          socket.off('connect_error', onError);
+          socket.disconnect();
+          resolve(Boolean(payload?.ok));
+        }
+      );
+    };
+
+    socket.once('connect_error', onError);
+    socket.once('connect', onConnect);
+  });
+}

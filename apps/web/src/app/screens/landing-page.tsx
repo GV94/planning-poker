@@ -101,7 +101,7 @@ export function LandingPage() {
             >
               <input
                 className="flex-1 rounded-md border border-slate-700/80 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none transition focus:border-slate-400 focus:ring-1 focus:ring-slate-500"
-                placeholder="Lobby ID (e.g. from URL)"
+                placeholder="Lobby ID"
                 value={joinCode}
                 onChange={(e) => setJoinCode(e.target.value)}
               />

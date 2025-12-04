@@ -450,7 +450,7 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => {
     const conn = connections.get(socket.id);
     if (conn) {
-    connections.delete(socket.id);
+      connections.delete(socket.id);
       const stillHasConnections = Array.from(connections.values()).some(
         (c) => c.lobbyId === conn.lobbyId
       );
@@ -489,6 +489,25 @@ io.on('connection', (socket) => {
         return;
       }
       void handleJoinLobby(socket, lobbyId, data?.name, data?.clientId, ack);
+    }
+  );
+
+  // Client may emit:
+  //   socket.emit('lobby:exists', { lobbyId }, (response) => { ok: boolean })
+  socket.on(
+    'lobby:exists',
+    async (
+      data: { lobbyId?: LobbyId },
+      ack?: (payload: { ok: boolean }) => void
+    ) => {
+      if (!ack) return;
+      const lobbyId = data?.lobbyId;
+      if (!lobbyId) {
+        ack({ ok: false });
+        return;
+      }
+      const lobby = await loadLobby(lobbyId);
+      ack({ ok: Boolean(lobby) });
     }
   );
 

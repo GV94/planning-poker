@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '../../components/ui/button.jsx';
 import {
   getLobbySession,
@@ -13,11 +13,13 @@ import {
   joinLobby,
   revealCards,
   resetLobby,
+  lobbyExists,
 } from '../../p2p/lobby-connection.js';
 import type { PlanningPokerCard } from 'shared-types';
 
 export function LobbyPage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
+  const navigate = useNavigate();
   const [session, setSession] = useState<LobbySession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState(() => {
@@ -27,6 +29,7 @@ export function LobbyPage() {
   const [isJoining, setIsJoining] = useState(false);
   const [isRevealing, setIsRevealing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
 
   const CARDS: PlanningPokerCard[] = [
     0,
@@ -54,6 +57,7 @@ export function LobbyPage() {
         if (!cancelled) {
           setSession(current);
           setError(null);
+          setIsChecking(false);
         }
         return;
       }
@@ -62,6 +66,18 @@ export function LobbyPage() {
         if (!cancelled) {
           setError('Missing lobby id');
           setSession(null);
+          setIsChecking(false);
+        }
+        return;
+      }
+
+      // First, check if the lobby exists at all before prompting for name.
+      const exists = await lobbyExists(lobbyId);
+      if (!exists) {
+        if (!cancelled) {
+          setError('Lobby not found');
+          setSession(null);
+          setIsChecking(false);
         }
         return;
       }
@@ -102,7 +118,16 @@ export function LobbyPage() {
               err instanceof Error ? err.message : 'Failed to rejoin lobby'
             );
           }
+        } finally {
+          if (!cancelled) {
+            setIsChecking(false);
+          }
         }
+        return;
+      }
+
+      if (!cancelled) {
+        setIsChecking(false);
       }
     }
 
@@ -200,6 +225,46 @@ export function LobbyPage() {
       socket.off('lobby:reset', handleReset);
     };
   }, [session]);
+
+  if (error === 'Lobby not found') {
+    return (
+      <section className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center bg-slate-950 px-4 py-10">
+        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/80 p-6 text-center shadow-xl shadow-slate-950/60">
+          <h2 className="text-lg font-semibold text-slate-50">
+            Lobby not found
+          </h2>
+          <p className="mt-2 text-sm text-slate-400">
+            There&apos;s no lobby with ID{' '}
+            <span className="font-mono text-slate-100">{lobbyId}</span>. It may
+            have expired or been closed.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="px-4"
+            >
+              Back to start
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (isChecking) {
+    return (
+      <section className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center bg-slate-950 px-4 py-10">
+        <div className="flex flex-col items-center gap-3 text-center text-slate-200">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-slate-600 border-t-sky-400" />
+          <p className="text-sm text-slate-300">
+            Connecting to lobby <span className="font-mono">{lobbyId}</span>...
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   if (error) {
     return <div>Failed to connect to lobby: {error}</div>;
