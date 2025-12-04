@@ -28,7 +28,12 @@ export interface JoinLobbyResult {
 
 function getP2PBaseUrl(): string {
   const fromEnv = import.meta.env.VITE_P2P_BASE as string | undefined;
-  return fromEnv ?? 'http://localhost:3002';
+  if (!fromEnv) {
+    throw new Error(
+      'VITE_P2P_BASE environment variable is required but was not set'
+    );
+  }
+  return fromEnv;
 }
 
 /**
@@ -214,15 +219,11 @@ export function lobbyExists(lobbyId: string): Promise<boolean> {
     };
 
     const onConnect = () => {
-      socket.emit(
-        'lobby:exists',
-        { lobbyId },
-        (payload?: { ok: boolean }) => {
-          socket.off('connect_error', onError);
-          socket.disconnect();
-          resolve(Boolean(payload?.ok));
-        }
-      );
+      socket.emit('lobby:exists', { lobbyId }, (payload?: { ok: boolean }) => {
+        socket.off('connect_error', onError);
+        socket.disconnect();
+        resolve(Boolean(payload?.ok));
+      });
     };
 
     socket.once('connect_error', onError);

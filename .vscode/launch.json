@@ -8,7 +8,7 @@
       "runtimeExecutable": "pnpm",
       "runtimeArgs": [
         "nx",
-        "serve",
+        "dev",
         "p2p-manager"
       ],
       "console": "integratedTerminal",

@@ -22,8 +22,12 @@ interface Lobby {
 
 const lobbies = new Map<LobbyId, Lobby>();
 const connections = new Map<string, { lobbyId: LobbyId; clientId: ClientId }>();
+const lobbyRemovalTimers = new Map<LobbyId, ReturnType<typeof setTimeout>>();
 
-const redisUrl = process.env.REDIS_URL ?? 'redis://localhost:6379';
+const redisUrl = process.env.REDIS_URL;
+if (!redisUrl) {
+  throw new Error('REDIS_URL environment variable is required but was not set');
+}
 const redis: RedisClientType = createClient({ url: redisUrl });
 
 redis.on('error', (err: unknown) => {
@@ -201,6 +205,12 @@ async function handleCreateLobby(
   };
 
   lobbies.set(lobbyId, lobby);
+  // If there was a scheduled removal (e.g. lobby briefly empty), cancel it.
+  const pendingRemoval = lobbyRemovalTimers.get(lobbyId);
+  if (pendingRemoval) {
+    clearTimeout(pendingRemoval);
+    lobbyRemovalTimers.delete(lobbyId);
+  }
   await saveLobby(lobby);
 
   // Join the socket.io room for this lobby so future events can be room-scoped
@@ -455,8 +465,23 @@ io.on('connection', (socket) => {
         (c) => c.lobbyId === conn.lobbyId
       );
       if (!stillHasConnections) {
-        lobbies.delete(conn.lobbyId);
-        void redis.del(lobbyKey(conn.lobbyId));
+        // Schedule lobby removal after a grace period, so a single user
+        // refreshing the page doesn't immediately delete the lobby.
+        const existingTimer = lobbyRemovalTimers.get(conn.lobbyId);
+        if (existingTimer) {
+          clearTimeout(existingTimer);
+        }
+        const timeout = setTimeout(() => {
+          const hasReturnedConnections = Array.from(connections.values()).some(
+            (c) => c.lobbyId === conn.lobbyId
+          );
+          if (!hasReturnedConnections) {
+            lobbies.delete(conn.lobbyId);
+            void redis.del(lobbyKey(conn.lobbyId));
+          }
+          lobbyRemovalTimers.delete(conn.lobbyId);
+        }, 5 * 60 * 1000); // 5 minutes
+        lobbyRemovalTimers.set(conn.lobbyId, timeout);
       }
     }
   });
