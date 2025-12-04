@@ -67,7 +67,8 @@
       "defaultConfiguration": "development",
       "options": {
         "buildTarget": "p2p-manager:build",
-        "runBuildTargetDependencies": true
+        "runBuildTargetDependencies": true,
+        "watch": true
       }
     }
   },

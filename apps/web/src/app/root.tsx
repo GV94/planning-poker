@@ -1,5 +1,19 @@
-import { Outlet, Link, MetaFunction } from 'react-router';
-import './styles.css';
+import { Outlet, MetaFunction, Scripts, Links, Meta } from 'react-router';
+import type { Route } from './+types/root.js';
+import './app.css';
+
+export const links: Route.LinksFunction = () => [
+  { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+  {
+    rel: 'preconnect',
+    href: 'https://fonts.gstatic.com',
+    crossOrigin: 'anonymous',
+  },
+  {
+    rel: 'stylesheet',
+    href: 'https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap',
+  },
+];
 
 export const meta: MetaFunction = () => [
   { title: 'Plokr' },
@@ -9,19 +23,21 @@ export const meta: MetaFunction = () => [
   },
 ];
 
-export default function App() {
+export function Layout() {
   return (
-    <div className={`min-h-screen bg-slate-950 text-slate-50`}>
-      <header className="border-b border-slate-800 bg-slate-900">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
-          <Link to="/" className="text-lg font-semibold">
-            Plokr
-          </Link>
-        </div>
-      </header>
-      <main className="mx-auto flex max-w-5xl flex-1 px-4 py-6">
+    <html lang="en">
+      <head>
+        <Meta />
+        <Links />
+      </head>
+      <body>
         <Outlet />
-      </main>
-    </div>
+        <Scripts />
+      </body>
+    </html>
   );
+}
+
+export default function App() {
+  return <Outlet />;
 }

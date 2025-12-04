@@ -30,13 +30,14 @@ if (!redisUrl) {
 }
 const redisUsername = process.env.REDIS_USERNAME;
 const redisPassword = process.env.REDIS_PASSWORD;
+const redisPort = Number(process.env.REDIS_PORT) || 17837;
 
 const redis: RedisClientType = createClient({
   ...(redisUsername ? { username: redisUsername } : {}),
   ...(redisPassword ? { password: redisPassword } : {}),
   socket: {
     host: redisUrl,
-    port: 17837,
+    port: redisPort || 17837,
   },
 });
 
