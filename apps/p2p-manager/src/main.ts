@@ -38,7 +38,13 @@ redis.connect().catch((err: unknown) => {
   console.error('Failed to connect to Redis at', redisUrl, err);
 });
 
-const httpServer = createServer();
+const httpServer = createServer((req, res) => {
+  if (req.url === '/health' && req.method === 'GET') {
+    res.statusCode = 200;
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.end(JSON.stringify({ status: 'ok' }));
+  }
+});
 const io = new Server(httpServer, {
   // Allow all origins for now; tighten this later if needed
   cors: {
