@@ -2,6 +2,8 @@ declare module 'redis' {
   export interface RedisClientType {
     get(key: string): Promise<string | null>;
     set(key: string, value: string): Promise<void>;
+    del(key: string): Promise<number>;
+    expire(key: string, seconds: number): Promise<number>;
     on(event: 'error', listener: (err: unknown) => void): void;
     connect(): Promise<void>;
   }

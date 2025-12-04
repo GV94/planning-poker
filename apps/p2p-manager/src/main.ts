@@ -150,7 +150,10 @@ function fromStoredLobby(stored: StoredLobby): Lobby {
 
 async function saveLobby(lobby: Lobby): Promise<void> {
   const stored = toStoredLobby(lobby);
-  await redis.set(lobbyKey(lobby.id), JSON.stringify(stored));
+  const key = lobbyKey(lobby.id);
+  await redis.set(key, JSON.stringify(stored));
+  // Refresh TTL on every write so lobbies expire after 24h of inactivity.
+  await redis.expire(key, 60 * 60 * 24);
 }
 
 async function loadLobby(lobbyId: LobbyId): Promise<Lobby | null> {
@@ -445,7 +448,17 @@ async function handleReset(
 io.on('connection', (socket) => {
   console.log('client connected', socket.id);
   socket.on('disconnect', () => {
+    const conn = connections.get(socket.id);
+    if (conn) {
     connections.delete(socket.id);
+      const stillHasConnections = Array.from(connections.values()).some(
+        (c) => c.lobbyId === conn.lobbyId
+      );
+      if (!stillHasConnections) {
+        lobbies.delete(conn.lobbyId);
+        void redis.del(lobbyKey(conn.lobbyId));
+      }
+    }
   });
 
   // Client should emit:
