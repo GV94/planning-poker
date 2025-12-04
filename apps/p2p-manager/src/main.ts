@@ -1,5 +1,5 @@
 import { createServer } from 'http';
-import { randomUUID } from 'crypto';
+import { randomUUID, randomBytes } from 'crypto';
 // Typed import is declared in a local ambient module in this app to avoid
 // depending on external type packages.
 import { createClient, type RedisClientType } from 'redis';
@@ -45,7 +45,7 @@ const io = new Server(httpServer, {
 function generateLobbyId(): LobbyId {
   let id: LobbyId;
   do {
-    id = randomUUID();
+    id = randomBytes(6).toString('hex');
   } while (lobbies.has(id));
   return id;
 }

@@ -43,12 +43,12 @@ export function LandingPage() {
         <div className="space-y-6">
           <header className="space-y-3 text-left">
             <h1 className="text-3xl font-semibold tracking-tight text-slate-50 md:text-4xl">
-              Lightweight planning poker
+              Plokr
             </h1>
             <p className="text-sm text-slate-400 md:text-base">
-              Spin up a lobby in seconds, share the link, and estimate stories
-              together. Real-time, low-friction, and powered by a minimal
-              signalling backend.
+              Lightweight planning poker for fast-moving teams. Spin up a lobby
+              in seconds, share the link, and estimate stories together in
+              real-time.
             </p>
           </header>
 

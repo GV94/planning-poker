@@ -6,7 +6,7 @@ export function App() {
       <header className="border-b border-slate-800 bg-slate-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link to="/" className="text-lg font-semibold">
-            Planning Poker
+            Plokr
           </Link>
         </div>
       </header>

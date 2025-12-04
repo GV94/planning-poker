@@ -324,7 +324,7 @@ export function LobbyPage() {
             <p className="text-xs uppercase tracking-wide text-slate-500">
               Lobby
             </p>
-            <h2 className="text-2xl font-semibold text-slate-50 md:text-3xl">
+            <h2 className="text-xl font-semibold text-slate-50 md:text-2xl">
               <span className="font-mono text-sky-300">{session.lobbyId}</span>
             </h2>
           </div>
