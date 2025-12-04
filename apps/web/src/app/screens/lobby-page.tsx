@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router';
 import { Button } from '../../components/ui/button.jsx';
 import {
   getLobbySession,
@@ -17,7 +17,7 @@ import {
 } from '../../p2p/lobby-connection.js';
 import type { PlanningPokerCard } from 'shared-types';
 
-export function LobbyPage() {
+export default function LobbyPage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
   const [session, setSession] = useState<LobbySession | null>(null);

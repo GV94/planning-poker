@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button.jsx';
 import { createLobby } from '../../p2p/lobby-connection.js';
 import { saveClientSession, setLobbySession } from '../../p2p/lobby-session.js';
 
-export function LandingPage() {
+export default function LandingPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');

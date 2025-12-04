@@ -1,8 +1,17 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, MetaFunction } from 'react-router';
+import './styles.css';
 
-export function App() {
+export const meta: MetaFunction = () => [
+  { title: 'Plokr' },
+  {
+    name: 'description',
+    content: 'Plokr is a platform for creating and managing your projects.',
+  },
+];
+
+export default function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-50">
+    <div className={`min-h-screen bg-slate-950 text-slate-50`}>
       <header className="border-b border-slate-800 bg-slate-900">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
           <Link to="/" className="text-lg font-semibold">
@@ -16,5 +25,3 @@ export function App() {
     </div>
   );
 }
-
-export default App;
