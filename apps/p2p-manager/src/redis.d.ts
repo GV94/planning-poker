@@ -8,7 +8,11 @@ declare module 'redis' {
     connect(): Promise<void>;
   }
 
-  export function createClient(config: { url: string }): RedisClientType;
+  export function createClient(config: {
+    url: string;
+    username?: string;
+    password?: string;
+  }): RedisClientType;
 }
 
 

@@ -28,7 +28,14 @@ const redisUrl = process.env.REDIS_URL;
 if (!redisUrl) {
   throw new Error('REDIS_URL environment variable is required but was not set');
 }
-const redis: RedisClientType = createClient({ url: redisUrl });
+const redisUsername = process.env.REDIS_USERNAME;
+const redisPassword = process.env.REDIS_PASSWORD;
+
+const redis: RedisClientType = createClient({
+  url: redisUrl,
+  ...(redisUsername ? { username: redisUsername } : {}),
+  ...(redisPassword ? { password: redisPassword } : {}),
+});
 
 redis.on('error', (err: unknown) => {
   console.error('Redis client error', err);
