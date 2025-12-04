@@ -32,9 +32,12 @@ const redisUsername = process.env.REDIS_USERNAME;
 const redisPassword = process.env.REDIS_PASSWORD;
 
 const redis: RedisClientType = createClient({
-  url: redisUrl,
   ...(redisUsername ? { username: redisUsername } : {}),
   ...(redisPassword ? { password: redisPassword } : {}),
+  socket: {
+    host: redisUrl,
+    port: 17837,
+  },
 });
 
 redis.on('error', (err: unknown) => {

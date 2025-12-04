@@ -9,10 +9,8 @@ declare module 'redis' {
   }
 
   export function createClient(config: {
-    url: string;
+    socket: { host: string; port: number };
     username?: string;
     password?: string;
   }): RedisClientType;
 }
-
-
