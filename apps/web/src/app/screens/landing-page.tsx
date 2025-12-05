@@ -3,9 +3,15 @@ import { useNavigate } from 'react-router';
 import { Button } from '../../components/ui/button.jsx';
 import { createLobby } from '../../p2p/lobby-connection.js';
 import { saveClientSession, setLobbySession } from '../../p2p/lobby-session.js';
+import { type MetaFunction } from 'react-router';
 
-export const meta = () => [
+export const meta = (): MetaFunction => [
   { title: 'Plokr - Instant Planning Poker for Agile Teams' },
+  {
+    name: 'viewport',
+    content:
+      'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no',
+  },
   {
     name: 'description',
     content:
