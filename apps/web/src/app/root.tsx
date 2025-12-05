@@ -1,4 +1,11 @@
-import { Outlet, MetaFunction, Scripts, Links, Meta } from 'react-router';
+import {
+  Outlet,
+  MetaFunction,
+  Scripts,
+  Links,
+  Meta,
+  ScrollRestoration,
+} from 'react-router';
 import type { Route } from './+types/root.js';
 import './app.css';
 
@@ -36,6 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </head>
       <body className={`min-h-screen bg-slate-950 text-slate-50`}>
         {children}
+        <ScrollRestoration />
         <Scripts />
       </body>
     </html>
