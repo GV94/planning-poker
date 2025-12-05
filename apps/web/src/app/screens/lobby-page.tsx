@@ -47,6 +47,7 @@ export default function LobbyPage() {
     55,
     100,
     '?',
+    '☕',
   ];
 
   useEffect(() => {

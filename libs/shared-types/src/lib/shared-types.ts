@@ -15,7 +15,8 @@ export type PlanningPokerCard =
   | 34
   | 55
   | 100
-  | '?';
+  | '?'
+  | '☕';
 
 export interface PlayerState {
   id: ClientId;
