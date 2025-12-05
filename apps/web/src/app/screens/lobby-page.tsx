@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Button } from '../../components/ui/button.jsx';
+import { Clipboard, Check } from 'lucide-react';
 import {
   getLobbySession,
   loadClientSession,
@@ -30,6 +31,7 @@ export default function LobbyPage() {
   const [isRevealing, setIsRevealing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [hasCopiedLink, setHasCopiedLink] = useState(false);
 
   const CARDS: PlanningPokerCard[] = [
     0,
@@ -381,17 +383,64 @@ export default function LobbyPage() {
     }
   }
 
+  async function handleCopyLink() {
+    try {
+      if (typeof window === 'undefined' || !window.location) return;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(window.location.href);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = window.location.href;
+        textarea.style.position = 'fixed';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
+      setHasCopiedLink(true);
+      setTimeout(() => setHasCopiedLink(false), 2000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to copy link');
+    }
+  }
+
   return (
     <section className="flex min-h-[calc(100vh-4rem)] w-full items-start justify-center bg-slate-950 px-1 py-8 md:py-10">
       <div className="flex w-full max-w-5xl flex-col gap-6">
-        <header className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/60 backdrop-blur-sm md:flex-row md:items-center">
+        <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/60 backdrop-blur-sm">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">
               Lobby
             </p>
-            <h2 className="text-xl font-semibold text-slate-50 md:text-2xl">
-              <span className="font-mono text-sky-300">{session.lobbyId}</span>
-            </h2>
+            <div className="mt-1 flex items-center gap-2">
+              <h2 className="text-xl font-semibold text-slate-50 md:text-2xl">
+                <span className="font-mono text-sky-300">
+                  {session.lobbyId}
+                </span>
+              </h2>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCopyLink}
+                className="h-8 w-8 p-0"
+                aria-label={hasCopiedLink ? 'Link copied' : 'Copy lobby link'}
+                title={hasCopiedLink ? 'Link copied' : 'Copy lobby link'}
+              >
+                {hasCopiedLink ? (
+                  <Check
+                    className="h-4 w-4 text-emerald-300"
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Clipboard
+                    className="h-4 w-4 text-slate-200"
+                    aria-hidden="true"
+                  />
+                )}
+              </Button>
+            </div>
           </div>
         </header>
 
