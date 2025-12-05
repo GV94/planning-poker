@@ -18,20 +18,24 @@ export const links: Route.LinksFunction = () => [
 export const meta: MetaFunction = () => [
   { title: 'Plokr' },
   {
+    name: 'viewport',
+    content: 'width=device-width,initial-scale=1,viewport-fit=cover',
+  },
+  {
     name: 'description',
     content: 'Plokr is a platform for creating and managing your projects.',
   },
 ];
 
-export function Layout() {
+export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
         <Meta />
         <Links />
       </head>
-      <body>
-        <Outlet />
+      <body className={`min-h-screen bg-slate-950 text-slate-50`}>
+        {children}
         <Scripts />
       </body>
     </html>
@@ -39,5 +43,9 @@ export function Layout() {
 }
 
 export default function App() {
-  return <Outlet />;
+  return (
+    <main className="mx-auto flex max-w-5xl flex-1 px-4 py-6">
+      <Outlet />
+    </main>
+  );
 }
