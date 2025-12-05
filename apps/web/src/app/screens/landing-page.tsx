@@ -4,6 +4,33 @@ import { Button } from '../../components/ui/button.jsx';
 import { createLobby } from '../../p2p/lobby-connection.js';
 import { saveClientSession, setLobbySession } from '../../p2p/lobby-session.js';
 
+export const meta = () => [
+  { title: 'Plokr - Instant Planning Poker for Agile Teams' },
+  {
+    name: 'description',
+    content:
+      'Free, real-time planning poker tool. No registration required. Create a lobby, invite your team, and estimate user stories instantly with Fibonacci cards.',
+  },
+  {
+    name: 'keywords',
+    content:
+      'planning poker, scrum poker, agile estimation, story points, planning poker online, free planning poker, plokr',
+  },
+  { property: 'og:title', content: 'Plokr - Instant Planning Poker' },
+  {
+    property: 'og:description',
+    content: 'Simple, fast planning poker for remote teams. No signup needed.',
+  },
+  { property: 'og:type', content: 'website' },
+  { name: 'twitter:card', content: 'summary_large_image' },
+  { name: 'twitter:title', content: 'Plokr - Instant Planning Poker' },
+  {
+    name: 'twitter:description',
+    content:
+      'Zero-friction estimation for agile teams. Start voting in seconds.',
+  },
+];
+
 export default function LandingPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
