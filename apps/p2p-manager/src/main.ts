@@ -29,7 +29,7 @@ const httpServer = createServer((req, res) => {
 const io = new Server(httpServer, {
   // Allow all origins for now; tighten this later if needed
   cors: {
-    origin: '*',
+    origin: process.env.CORS_ORIGIN ?? '*',
   },
 });
 
