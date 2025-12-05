@@ -1,8 +1,8 @@
 {
-  "name": "p2p-manager",
+  "name": "lobby-server",
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
-  "root": "apps/p2p-manager",
-  "sourceRoot": "apps/p2p-manager/src",
+  "root": "apps/lobby-server",
+  "sourceRoot": "apps/lobby-server/src",
   "projectType": "application",
   "targets": {
     "build": {
@@ -11,12 +11,12 @@
       "defaultConfiguration": "production",
       "options": {
         "platform": "node",
-        "outputPath": "dist/apps/p2p-manager",
+        "outputPath": "dist/apps/lobby-server",
         "format": ["esm"],
         "bundle": false,
-        "main": "apps/p2p-manager/src/main.ts",
-        "tsConfig": "apps/p2p-manager/tsconfig.app.json",
-        "assets": ["apps/p2p-manager/src/assets"],
+        "main": "apps/lobby-server/src/main.ts",
+        "tsConfig": "apps/lobby-server/tsconfig.app.json",
+        "assets": ["apps/lobby-server/src/assets"],
         "generatePackageJson": true,
         "esbuildOptions": {
           "sourcemap": true,
@@ -42,8 +42,8 @@
       "cache": true,
       "executor": "@nx/js:prune-lockfile",
       "outputs": [
-        "{workspaceRoot}/dist/apps/p2p-manager/package.json",
-        "{workspaceRoot}/dist/apps/p2p-manager/pnpm-lock.yaml"
+        "{workspaceRoot}/dist/apps/lobby-server/package.json",
+        "{workspaceRoot}/dist/apps/lobby-server/pnpm-lock.yaml"
       ],
       "options": {
         "buildTarget": "build"
@@ -52,7 +52,7 @@
     "copy-workspace-modules": {
       "dependsOn": ["build"],
       "cache": true,
-      "outputs": ["{workspaceRoot}/dist/p2p-manager/workspace_modules"],
+      "outputs": ["{workspaceRoot}/dist/lobby-server/workspace_modules"],
       "executor": "@nx/js:copy-workspace-modules",
       "options": {
         "buildTarget": "build"
@@ -66,7 +66,7 @@
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "p2p-manager:build",
+        "buildTarget": "lobby-server:build",
         "runBuildTargetDependencies": true,
         "watch": true
       }

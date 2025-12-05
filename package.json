@@ -7,8 +7,8 @@
     "web:dev": "nx dev web",
     "web:build": "nx build web",
     "web:test": "nx test web",
-    "p2p:dev": "nx serve p2p-manager",
-    "p2p:build": "nx build p2p-manager",
+    "p2p:dev": "nx serve lobby-server",
+    "p2p:build": "nx build lobby-server",
     "verify": "nx run-many --targets=lint,build --all"
   },
   "devDependencies": {

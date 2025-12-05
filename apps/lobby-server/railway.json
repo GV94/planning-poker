@@ -3,7 +3,7 @@
   "build": {
     "builder": "RAILPACK",
     "buildCommand": "pnpm p2p:build",
-    "dockerfilePath": "apps/p2p-manager/Dockerfile"
+    "dockerfilePath": "apps/lobby-server/Dockerfile"
   },
   "deploy": {
     "healthcheckPath": "/health",

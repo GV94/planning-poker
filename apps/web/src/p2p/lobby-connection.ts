@@ -37,7 +37,7 @@ function getP2PBaseUrl(): string {
 }
 
 /**
- * Connects to the p2p-manager socket.io server and creates a new lobby.
+ * Connects to the lobby-server socket.io server and creates a new lobby.
  *
  * Usage:
  *   const { lobbyId, hostId, socket } = await createLobby(name);
@@ -57,7 +57,7 @@ export function createLobby(name: string): Promise<CreateLobbyResult> {
     };
 
     const onConnect = () => {
-      // Once the WebSocket connection to the p2p-manager server is established,
+      // Once the WebSocket connection to the lobby-server server is established,
       // ask the server to create a new lobby, providing our display name.
       socket.emit(
         'lobby:create',
@@ -101,7 +101,7 @@ interface JoinLobbyErrorPayload {
 type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
 
 /**
- * Connects to the p2p-manager and joins an existing lobby by id.
+ * Connects to the lobby-server and joins an existing lobby by id.
  *
  * Usage:
  *   const { lobbyId, hostId, clientId, socket } = await joinLobby(lobbyId, name);

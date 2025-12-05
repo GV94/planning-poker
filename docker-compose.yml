@@ -1,5 +1,5 @@
 services:
-  p2p-manager:
+  lobby-server:
     image: node:22-alpine
     working_dir: /app
     command: sh -c "corepack enable && pnpm install && pnpm p2p:dev"
@@ -27,7 +27,7 @@ services:
     ports:
       - 4200:4200
     depends_on:
-      - p2p-manager
+      - lobby-server
     volumes:
       - .:/app
       - web_node_modules:/app/node_modules
@@ -38,7 +38,7 @@ services:
       - 6379:6379
     volumes:
       - redis_data:/data
-    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    command: ['redis-server', '--save', '60', '1', '--loglevel', 'warning']
 
 volumes:
   p2p_node_modules:
