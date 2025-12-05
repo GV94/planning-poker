@@ -40,6 +40,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
       <head>
         <Meta />
         <Links />
+        <script
+          data-goatcounter="https://plokr-app.goatcounter.com/count"
+          async
+          src="//gc.zgo.at/count.js"
+        ></script>
       </head>
       <body className={`min-h-screen bg-slate-950 text-slate-50`}>
         {children}
