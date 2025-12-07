@@ -38,6 +38,21 @@ export interface JoinLobbyErrorPayload {
 
 export type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
 
+export interface SyncLobbySuccessPayload {
+  ok: true;
+  lobbyId: LobbyId;
+  hostId: ClientId;
+  participants: ParticipantInfo[];
+  isRevealed: boolean;
+}
+
+export interface SyncLobbyErrorPayload {
+  ok: false;
+  error: string;
+}
+
+export type SyncLobbyAckPayload = SyncLobbySuccessPayload | SyncLobbyErrorPayload;
+
 export interface VoteSuccessPayload {
   ok: true;
 }
@@ -77,4 +92,3 @@ export interface StoredLobby {
   participants: ParticipantInfo[];
   isRevealed: boolean;
 }
-

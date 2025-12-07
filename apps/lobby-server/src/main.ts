@@ -7,12 +7,14 @@ import { handleExists } from './actions/exists.js';
 import { handleJoinLobby } from './actions/join-lobby.js';
 import { handleReset } from './actions/reset.js';
 import { handleReveal } from './actions/reveal.js';
+import { handleSync } from './actions/sync.js';
 import { handleVote } from './actions/vote.js';
 import type {
   CreateLobbyAckPayload,
   JoinLobbyAckPayload,
   ResetAckPayload,
   RevealAckPayload,
+  SyncLobbyAckPayload,
   VoteAckPayload,
 } from './types.js';
 
@@ -112,6 +114,16 @@ io.on('connection', (socket) => {
     'lobby:reset',
     (data: { lobbyId?: LobbyId }, ack?: (payload: ResetAckPayload) => void) =>
       void handleReset(io, socket, data, ack)
+  );
+
+  // Client should emit:
+  //   socket.emit('lobby:sync', { lobbyId }, (response) => { ... })
+  socket.on(
+    'lobby:sync',
+    (
+      data: { lobbyId?: LobbyId },
+      ack?: (payload: SyncLobbyAckPayload) => void
+    ) => void handleSync(io, socket, data, ack)
   );
 });
 

@@ -15,6 +15,7 @@ import {
   revealCards,
   resetLobby,
   lobbyExists,
+  syncLobby,
 } from '../../p2p/lobby-connection.js';
 import type { PlanningPokerCard } from 'shared-types';
 
@@ -221,11 +222,40 @@ export default function LobbyPage() {
     socket.on('lobby:revealed', handleRevealed);
     socket.on('lobby:reset', handleReset);
 
+    // Refresh state when tab becomes visible (handles background throttling/disconnects)
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void (async () => {
+          try {
+            const synced = await syncLobby(socket, session.lobbyId);
+            setSession((prev) => {
+              if (!prev || prev.lobbyId !== synced.lobbyId) return prev;
+              const updated: LobbySession = {
+                ...prev,
+                hostId: synced.hostId,
+                participants: synced.participants,
+                isRevealed: synced.isRevealed,
+              };
+              setLobbySession(updated);
+              return updated;
+            });
+          } catch (error) {
+            console.error(
+              'Failed to sync lobby state on visibility change',
+              error
+            );
+          }
+        })();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     return () => {
       socket.off('lobby:participant-joined', handleParticipantJoined);
       socket.off('lobby:voted', handleVoted);
       socket.off('lobby:revealed', handleRevealed);
       socket.off('lobby:reset', handleReset);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [session]);
 

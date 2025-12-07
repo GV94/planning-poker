@@ -26,6 +26,13 @@ export interface JoinLobbyResult {
   socket: Socket;
 }
 
+export interface SyncLobbyResult {
+  lobbyId: string;
+  hostId: string;
+  participants: ParticipantInfo[];
+  isRevealed: boolean;
+}
+
 function getP2PBaseUrl(): string {
   const fromEnv = import.meta.env.VITE_P2P_BASE as string | undefined;
   if (!fromEnv) {
@@ -228,5 +235,44 @@ export function lobbyExists(lobbyId: string): Promise<boolean> {
 
     socket.once('connect_error', onError);
     socket.once('connect', onConnect);
+  });
+}
+
+interface SyncLobbySuccessPayload {
+  ok: true;
+  lobbyId: string;
+  hostId: string;
+  participants: ParticipantInfo[];
+  isRevealed: boolean;
+}
+
+interface SyncLobbyErrorPayload {
+  ok: false;
+  error: string;
+}
+
+type SyncLobbyAckPayload = SyncLobbySuccessPayload | SyncLobbyErrorPayload;
+
+export function syncLobby(
+  socket: Socket,
+  lobbyId: string
+): Promise<SyncLobbyResult> {
+  return new Promise<SyncLobbyResult>((resolve, reject) => {
+    socket.emit(
+      'lobby:sync',
+      { lobbyId },
+      (payload?: SyncLobbyAckPayload) => {
+        if (!payload?.ok) {
+          reject(new Error(payload?.error ?? 'Failed to sync lobby'));
+          return;
+        }
+        resolve({
+          lobbyId: payload.lobbyId,
+          hostId: payload.hostId,
+          participants: payload.participants,
+          isRevealed: payload.isRevealed,
+        });
+      }
+    );
   });
 }
