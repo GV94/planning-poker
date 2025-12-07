@@ -227,7 +227,11 @@ export default function LobbyPage() {
       if (document.visibilityState === 'visible') {
         void (async () => {
           try {
-            const synced = await syncLobby(socket, session.lobbyId);
+            const synced = await syncLobby(
+              socket,
+              session.lobbyId,
+              session.selfId
+            );
             setSession((prev) => {
               if (!prev || prev.lobbyId !== synced.lobbyId) return prev;
               const updated: LobbySession = {

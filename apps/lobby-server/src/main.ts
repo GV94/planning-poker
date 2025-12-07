@@ -117,11 +117,11 @@ io.on('connection', (socket) => {
   );
 
   // Client should emit:
-  //   socket.emit('lobby:sync', { lobbyId }, (response) => { ... })
+  //   socket.emit('lobby:sync', { lobbyId, clientId }, (response) => { ... })
   socket.on(
     'lobby:sync',
     (
-      data: { lobbyId?: LobbyId },
+      data: { lobbyId?: LobbyId; clientId?: ClientId },
       ack?: (payload: SyncLobbyAckPayload) => void
     ) => void handleSync(io, socket, data, ack)
   );

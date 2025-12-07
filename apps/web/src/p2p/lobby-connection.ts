@@ -255,12 +255,13 @@ type SyncLobbyAckPayload = SyncLobbySuccessPayload | SyncLobbyErrorPayload;
 
 export function syncLobby(
   socket: Socket,
-  lobbyId: string
+  lobbyId: string,
+  clientId: string
 ): Promise<SyncLobbyResult> {
   return new Promise<SyncLobbyResult>((resolve, reject) => {
     socket.emit(
       'lobby:sync',
-      { lobbyId },
+      { lobbyId, clientId },
       (payload?: SyncLobbyAckPayload) => {
         if (!payload?.ok) {
           reject(new Error(payload?.error ?? 'Failed to sync lobby'));
