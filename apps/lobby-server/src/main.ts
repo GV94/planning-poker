@@ -20,6 +20,10 @@ import type {
 
 // Ensure store (and redis connection) is initialized
 import './LobbyService.js';
+import { registerStatsHandlers } from './events/stats-handlers.js';
+
+// Initialize event handlers
+registerStatsHandlers();
 
 const httpServer = createServer((req, res) => {
   if (req.url === '/health' && req.method === 'GET') {

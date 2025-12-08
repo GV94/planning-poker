@@ -4,6 +4,7 @@ import type { ClientId, LobbyId } from 'shared-types';
 import { connections, loadLobby, saveLobby } from '../LobbyService.js';
 import type { JoinLobbyAckPayload, JoinLobbySuccessPayload } from '../types.js';
 import { normalizeName, serializeParticipants } from '../utils.js';
+import { appEvents, LOBBY_JOINED } from '../events/events.js';
 
 export async function handleJoinLobby(
   io: Server,
@@ -74,6 +75,12 @@ export async function handleJoinLobby(
 
   // Notify all participants (including the new one) that someone joined.
   if (isNewParticipant) {
+    // Emit internal event for stats tracking
+    appEvents.emit(LOBBY_JOINED, {
+      lobbyId: lobby.id,
+      timestamp: Date.now(),
+    });
+
     io.to(lobbyId).emit('lobby:participant-joined', {
       lobbyId: lobby.id,
       clientId,

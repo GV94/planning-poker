@@ -10,6 +10,7 @@ import {
 } from '../LobbyService.js';
 import type { CreateLobbyAckPayload, Lobby, ParticipantInfo } from '../types.js';
 import { normalizeName, serializeParticipants } from '../utils.js';
+import { appEvents, LOBBY_CREATED } from '../events/events.js';
 
 export async function handleCreateLobby(
   socket: Socket,
@@ -44,6 +45,12 @@ export async function handleCreateLobby(
     lobbyRemovalTimers.delete(lobbyId);
   }
   await saveLobby(lobby);
+
+  // Emit internal event for stats tracking
+  appEvents.emit(LOBBY_CREATED, {
+    lobbyId,
+    timestamp: Date.now(),
+  });
 
   // Join the socket.io room for this lobby so future events can be room-scoped
   socket.join(lobbyId);
