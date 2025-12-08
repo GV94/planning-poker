@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '../../components/ui/button.jsx';
 import { Clipboard, Check } from 'lucide-react';
 import {
@@ -33,6 +34,8 @@ export default function LobbyPage() {
   const [isResetting, setIsResetting] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [hasCopiedLink, setHasCopiedLink] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string>();
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   const CARDS: PlanningPokerCard[] = [
     0,
@@ -310,6 +313,11 @@ export default function LobbyPage() {
   async function handleJoinSubmit(event: FormEvent) {
     event.preventDefault();
     if (!lobbyId || isJoining) return;
+
+    if (turnstileSiteKey && !captchaToken) {
+      return;
+    }
+
     setIsJoining(true);
     setError(null);
     try {
@@ -320,7 +328,12 @@ export default function LobbyPage() {
         participants,
         isRevealed,
         socket,
-      } = await joinLobby(lobbyId, name.trim() || 'Anonymous');
+      } = await joinLobby(
+        lobbyId,
+        name.trim() || 'Anonymous',
+        undefined, // new client id
+        captchaToken
+      );
       const newSession: LobbySession = {
         lobbyId: joinedId,
         hostId,
@@ -370,11 +383,20 @@ export default function LobbyPage() {
             />
             <Button
               type="submit"
-              disabled={isJoining}
+              disabled={isJoining || (!!turnstileSiteKey && !captchaToken)}
               className="mt-2 w-full transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
             >
               {isJoining ? 'Joining...' : 'Join lobby'}
             </Button>
+            {turnstileSiteKey && (
+              <div className="mt-3 flex justify-center">
+                <Turnstile
+                  siteKey={turnstileSiteKey}
+                  onSuccess={(token) => setCaptchaToken(token)}
+                  options={{ theme: 'dark' }}
+                />
+              </div>
+            )}
           </div>
         </form>
       </section>

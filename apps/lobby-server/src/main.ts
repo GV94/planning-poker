@@ -46,11 +46,11 @@ io.on('connection', (socket) => {
   });
 
   // Client should emit:
-  //   socket.emit('lobby:create', { name }, (response) => { ... })
+  //   socket.emit('lobby:create', { name, captchaToken }, (response) => { ... })
   socket.on(
     'lobby:create',
     (
-      data: { name?: string } | undefined,
+      data: { name?: string; captchaToken?: string } | undefined,
       ack?: (payload: CreateLobbyAckPayload) => void
     ) => {
       void handleCreateLobby(socket, data, ack);
@@ -58,11 +58,16 @@ io.on('connection', (socket) => {
   );
 
   // Client should emit:
-  //   socket.emit('lobby:join', { lobbyId, name }, (response) => { ... })
+  //   socket.emit('lobby:join', { lobbyId, name, clientId, captchaToken }, (response) => { ... })
   socket.on(
     'lobby:join',
     (
-      data: { lobbyId?: LobbyId; name?: string; clientId?: ClientId },
+      data: {
+        lobbyId?: LobbyId;
+        name?: string;
+        clientId?: ClientId;
+        captchaToken?: string;
+      },
       ack?: (payload: JoinLobbyAckPayload) => void
     ) => {
       const lobbyId = data?.lobbyId;
@@ -78,7 +83,8 @@ io.on('connection', (socket) => {
         lobbyId,
         data?.name,
         data?.clientId,
-        ack
+        ack,
+        data?.captchaToken
       );
     }
   );

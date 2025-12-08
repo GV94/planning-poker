@@ -14,13 +14,21 @@ export interface Lobby {
   isRevealed: boolean;
 }
 
-export interface CreateLobbyAckPayload {
+export interface CreateLobbySuccessPayload {
+  ok?: true; // Optional for backward compatibility if needed, but best to enforce
   lobbyId: LobbyId;
   hostId: ClientId;
   clientId: ClientId;
   participants: ParticipantInfo[];
   isRevealed: boolean;
 }
+
+export interface CreateLobbyErrorPayload {
+  ok: false;
+  error: string;
+}
+
+export type CreateLobbyAckPayload = CreateLobbySuccessPayload | CreateLobbyErrorPayload;
 
 export interface JoinLobbySuccessPayload {
   ok: true;

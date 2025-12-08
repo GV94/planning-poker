@@ -8,15 +8,32 @@ import {
   lobbyRemovalTimers,
   saveLobby,
 } from '../LobbyService.js';
-import type { CreateLobbyAckPayload, Lobby, ParticipantInfo } from '../types.js';
+import type {
+  CreateLobbyAckPayload,
+  Lobby,
+  ParticipantInfo,
+} from '../types.js';
 import { normalizeName, serializeParticipants } from '../utils.js';
 import { appEvents, LOBBY_CREATED } from '../events/events.js';
+import { verifyCaptcha } from '../captcha.js';
 
 export async function handleCreateLobby(
   socket: Socket,
-  data: { name?: string } | undefined,
-  ack?: (payload: CreateLobbyAckPayload) => void
+  data: { name?: string; captchaToken?: string } | undefined,
+  ack?: (payload: CreateLobbyAckPayload | { ok: false; error: string }) => void
 ) {
+  const isValid = await verifyCaptcha(
+    data?.captchaToken,
+    socket.handshake.address
+  );
+  if (!isValid) {
+    if (ack) {
+      // We should update the type definition to include error states or use a union
+      ack({ ok: false, error: 'Invalid CAPTCHA' });
+    }
+    return;
+  }
+
   const lobbyId = generateLobbyId();
   const hostId: ClientId = randomUUID() as ClientId;
   const hostName = normalizeName(data?.name);
@@ -57,6 +74,7 @@ export async function handleCreateLobby(
   connections.set(socket.id, { lobbyId, clientId: hostId });
 
   const payload: CreateLobbyAckPayload = {
+    ok: true,
     lobbyId,
     hostId,
     clientId: hostId,
@@ -72,4 +90,3 @@ export async function handleCreateLobby(
   // Also emit an event back to the creator in case they prefer event-style API
   socket.emit('lobby:created', payload);
 }
-

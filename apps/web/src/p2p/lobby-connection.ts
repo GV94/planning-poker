@@ -49,7 +49,10 @@ function getP2PBaseUrl(): string {
  * Usage:
  *   const { lobbyId, hostId, socket } = await createLobby(name);
  */
-export function createLobby(name: string): Promise<CreateLobbyResult> {
+export function createLobby(
+  name: string,
+  captchaToken?: string
+): Promise<CreateLobbyResult> {
   const baseUrl = getP2PBaseUrl();
 
   const socket = io(baseUrl, {
@@ -68,8 +71,10 @@ export function createLobby(name: string): Promise<CreateLobbyResult> {
       // ask the server to create a new lobby, providing our display name.
       socket.emit(
         'lobby:create',
-        { name },
+        { name, captchaToken },
         (payload: {
+          ok?: boolean;
+          error?: string;
           lobbyId: string;
           hostId: string;
           clientId: string;
@@ -79,6 +84,13 @@ export function createLobby(name: string): Promise<CreateLobbyResult> {
           // We successfully created a lobby, so we no longer need to listen
           // for connection errors on this initial handshake.
           socket.off('connect_error', onError);
+
+          if (payload.ok === false) {
+            socket.disconnect();
+            reject(new Error(payload.error ?? 'Failed to create lobby'));
+            return;
+          }
+
           // Resolve the outer Promise with the lobby identifiers plus the live socket
           // so callers can keep using it for further communication.
           resolve({ ...payload, socket });
@@ -116,7 +128,8 @@ type JoinLobbyAckPayload = JoinLobbySuccessPayload | JoinLobbyErrorPayload;
 export function joinLobby(
   lobbyId: string,
   name: string,
-  clientId?: string
+  clientId?: string,
+  captchaToken?: string
 ): Promise<JoinLobbyResult> {
   const baseUrl = getP2PBaseUrl();
 
@@ -134,7 +147,7 @@ export function joinLobby(
     const onConnect = () => {
       socket.emit(
         'lobby:join',
-        { lobbyId, name, clientId },
+        { lobbyId, name, clientId, captchaToken },
         (payload: JoinLobbyAckPayload) => {
           if (!payload?.ok) {
             socket.disconnect();

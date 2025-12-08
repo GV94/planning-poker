@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '../../components/ui/button.jsx';
 import { createLobby } from '../../p2p/lobby-connection.js';
 import { saveClientSession, setLobbySession } from '../../p2p/lobby-session.js';
 import { type MetaFunction } from 'react-router';
 
-export const meta = (): MetaFunction => [
+export const meta: MetaFunction = () => [
   { title: 'Plokr - Instant Planning Poker for Agile Teams' },
   {
     name: 'viewport',
@@ -41,12 +42,20 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
+  const [captchaToken, setCaptchaToken] = useState<string>();
+  const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
 
   async function handleCreateLobby() {
     const trimmedName = name.trim() || 'Anonymous';
 
+    if (turnstileSiteKey && !captchaToken) {
+      // If CAPTCHA is enabled, user must complete it.
+      // You might want to show a visual error here.
+      return;
+    }
+
     const { lobbyId, hostId, clientId, participants, isRevealed, socket } =
-      await createLobby(trimmedName);
+      await createLobby(trimmedName, captchaToken);
     // Persist the live socket connection and identifiers so the lobby page
     // can reuse the same session after navigation.
     if (socket) {
@@ -104,10 +113,21 @@ export default function LandingPage() {
                 size="lg"
                 className="w-full sm:w-auto transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
                 onClick={handleCreateLobby}
+                disabled={turnstileSiteKey && !captchaToken}
               >
                 Create lobby
               </Button>
             </div>
+            {turnstileSiteKey && (
+              <div className="mt-3">
+                <Turnstile
+                  siteKey={turnstileSiteKey}
+                  onError={(error) => console.error('Turnstile error:', error)}
+                  onSuccess={(token) => setCaptchaToken(token)}
+                  options={{ theme: 'dark' }}
+                />
+              </div>
+            )}
           </div>
 
           <div className="hidden text-sm text-slate-500 md:block">

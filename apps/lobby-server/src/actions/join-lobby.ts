@@ -5,6 +5,7 @@ import { connections, loadLobby, saveLobby } from '../LobbyService.js';
 import type { JoinLobbyAckPayload, JoinLobbySuccessPayload } from '../types.js';
 import { normalizeName, serializeParticipants } from '../utils.js';
 import { appEvents, LOBBY_JOINED } from '../events/events.js';
+import { verifyCaptcha } from '../captcha.js';
 
 export async function handleJoinLobby(
   io: Server,
@@ -12,8 +13,20 @@ export async function handleJoinLobby(
   lobbyId: LobbyId,
   name: string | undefined,
   existingClientId: ClientId | undefined,
-  ack?: (payload: JoinLobbyAckPayload) => void
+  ack: ((payload: JoinLobbyAckPayload) => void) | undefined,
+  captchaToken?: string
 ) {
+  const isCaptchaValid = await verifyCaptcha(
+    captchaToken,
+    socket.handshake.address
+  );
+  if (!isCaptchaValid) {
+    if (ack) {
+      ack({ ok: false, error: 'Invalid CAPTCHA' });
+    }
+    return;
+  }
+
   const lobby = await loadLobby(lobbyId);
   if (!lobby) {
     if (ack) {
