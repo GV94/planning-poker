@@ -146,43 +146,18 @@ describe('module-level redis setup', () => {
     vi.stubEnv('REDIS_URL', 'localhost');
   });
 
-  it('passes username and password to createClient when set', async () => {
+  it('passes REDIS_URL directly to createClient', async () => {
     vi.resetModules();
-    vi.stubEnv('REDIS_URL', 'redis-host');
-    vi.stubEnv('REDIS_USERNAME', 'myuser');
-    vi.stubEnv('REDIS_PASSWORD', 'mypass');
-    vi.stubEnv('REDIS_PORT', '6379');
+    vi.stubEnv('REDIS_URL', 'redis://myuser:mypass@redis-host:6379');
 
     const { createClient } = await import('redis');
     await import('./LobbyService.js');
 
-    expect(createClient).toHaveBeenCalledWith(
-      expect.objectContaining({
-        username: 'myuser',
-        password: 'mypass',
-        socket: { host: 'redis-host', port: 6379 },
-      })
-    );
+    expect(createClient).toHaveBeenCalledWith({
+      url: 'redis://myuser:mypass@redis-host:6379',
+    });
 
     vi.unstubAllEnvs();
-    vi.stubEnv('REDIS_URL', 'localhost');
-  });
-
-  it('omits username and password when not set', async () => {
-    vi.resetModules();
-    vi.stubEnv('REDIS_URL', 'redis-host');
-    delete process.env.REDIS_USERNAME;
-    delete process.env.REDIS_PASSWORD;
-    delete process.env.REDIS_PORT;
-
-    const { createClient } = await import('redis');
-    await import('./LobbyService.js');
-
-    const callArgs = (createClient as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0];
-    expect(callArgs).not.toHaveProperty('username');
-    expect(callArgs).not.toHaveProperty('password');
-    expect(callArgs.socket.port).toBe(17837);
-
     vi.stubEnv('REDIS_URL', 'localhost');
   });
 });
