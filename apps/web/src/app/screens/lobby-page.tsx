@@ -2,6 +2,8 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '../../components/ui/button.jsx';
+import { WakeUpOverlay } from '../../components/ui/wake-up-overlay.jsx';
+import { useServerStatus } from '../../contexts/server-status.jsx';
 import { Clipboard, Check } from 'lucide-react';
 import {
   getLobbySession,
@@ -9,6 +11,7 @@ import {
   saveClientSession,
   setLobbySession,
   type LobbySession,
+  clearClientSession,
 } from '../../p2p/lobby-session.js';
 import {
   castVote,
@@ -23,6 +26,8 @@ import type { PlanningPokerCard } from 'shared-types';
 export default function LobbyPage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
+  const { status: serverStatus, registerSocket } = useServerStatus();
+  const isDisconnected = serverStatus === 'disconnected';
   const [session, setSession] = useState<LobbySession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState(() => {
@@ -33,6 +38,7 @@ export default function LobbyPage() {
   const [isRevealing, setIsRevealing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
+  const [lobbyGone, setLobbyGone] = useState(false);
   const [hasCopiedLink, setHasCopiedLink] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string>();
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
@@ -151,6 +157,9 @@ export default function LobbyPage() {
 
     const { socket } = session;
 
+    // Register socket with server status provider for disconnect/reconnect tracking
+    registerSocket(socket);
+
     function handleParticipantJoined(event: {
       lobbyId: string;
       clientId: string;
@@ -225,35 +234,41 @@ export default function LobbyPage() {
     socket.on('lobby:revealed', handleRevealed);
     socket.on('lobby:reset', handleReset);
 
+    // Sync lobby state helper — used on both reconnect and visibility change
+    function doSync() {
+      void (async () => {
+        try {
+          const synced = await syncLobby(
+            socket,
+            session.lobbyId,
+            session.selfId
+          );
+          setSession((prev) => {
+            if (!prev || prev.lobbyId !== synced.lobbyId) return prev;
+            const updated: LobbySession = {
+              ...prev,
+              hostId: synced.hostId,
+              participants: synced.participants,
+              isRevealed: synced.isRevealed,
+            };
+            setLobbySession(updated);
+            return updated;
+          });
+        } catch {
+          // Lobby no longer exists after reconnect
+          clearClientSession();
+          setLobbyGone(true);
+        }
+      })();
+    }
+
+    // On socket reconnect, automatically sync lobby state
+    const handleReconnect = () => doSync();
+    socket.io.on('reconnect', handleReconnect);
+
     // Refresh state when tab becomes visible (handles background throttling/disconnects)
     const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void (async () => {
-          try {
-            const synced = await syncLobby(
-              socket,
-              session.lobbyId,
-              session.selfId
-            );
-            setSession((prev) => {
-              if (!prev || prev.lobbyId !== synced.lobbyId) return prev;
-              const updated: LobbySession = {
-                ...prev,
-                hostId: synced.hostId,
-                participants: synced.participants,
-                isRevealed: synced.isRevealed,
-              };
-              setLobbySession(updated);
-              return updated;
-            });
-          } catch (error) {
-            console.error(
-              'Failed to sync lobby state on visibility change',
-              error
-            );
-          }
-        })();
-      }
+      if (document.visibilityState === 'visible') doSync();
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
@@ -262,9 +277,36 @@ export default function LobbyPage() {
       socket.off('lobby:voted', handleVoted);
       socket.off('lobby:revealed', handleRevealed);
       socket.off('lobby:reset', handleReset);
+      socket.io.off('reconnect', handleReconnect);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
   }, [session]);
+
+  if (lobbyGone) {
+    return (
+      <section className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center bg-slate-950 px-4 py-10">
+        <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900/80 p-6 text-center shadow-xl shadow-slate-950/60">
+          <h2 className="text-lg font-semibold text-slate-50">
+            Lobby has ended
+          </h2>
+          <p className="mt-2 text-sm text-slate-400">
+            This lobby is no longer available. It may have expired while the
+            server was restarting.
+          </p>
+          <div className="mt-5 flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/')}
+              className="px-4"
+            >
+              Back to start
+            </Button>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   if (error === 'Lobby not found') {
     return (
@@ -463,8 +505,9 @@ export default function LobbyPage() {
   }
 
   return (
-    <section className="flex min-h-[calc(100vh-4rem)] w-full items-start justify-center bg-slate-950 px-1 py-8 md:py-10">
-      <div className="flex w-full max-w-5xl flex-col gap-6">
+    <section className="relative flex min-h-[calc(100vh-4rem)] w-full items-start justify-center bg-slate-950 px-1 py-8 md:py-10">
+      <WakeUpOverlay mode="overlay" visible={isDisconnected} />
+      <div className={`flex w-full max-w-5xl flex-col gap-6 ${isDisconnected ? 'pointer-events-none opacity-50' : ''}`}>
         <header className="rounded-2xl border border-slate-800 bg-slate-900/80 p-4 shadow-lg shadow-slate-950/60 backdrop-blur-sm">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-500">
@@ -517,6 +560,7 @@ export default function LobbyPage() {
                   type="button"
                   variant={self?.vote === card ? 'default' : 'outline'}
                   size="sm"
+                  disabled={isDisconnected}
                   className={`min-w-[2.5rem] border-slate-700/70 text-xs transition-transform duration-150 ${
                     self?.vote === card
                       ? 'shadow-lg shadow-sky-500/30'
@@ -556,7 +600,7 @@ export default function LobbyPage() {
                       type="button"
                       variant={session.isRevealed ? 'outline' : 'default'}
                       size="sm"
-                      disabled={session.isRevealed || isRevealing}
+                      disabled={session.isRevealed || isRevealing || isDisconnected}
                       onClick={handleReveal}
                       className="transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
                     >
@@ -584,7 +628,7 @@ export default function LobbyPage() {
                       type="button"
                       variant="outline"
                       size="sm"
-                      disabled={isResetting}
+                      disabled={isResetting || isDisconnected}
                       onClick={handleReset}
                     >
                       <span className="mr-1 inline-flex h-3 w-3 items-center justify-center">

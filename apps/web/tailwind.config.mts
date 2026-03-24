@@ -48,6 +48,30 @@ const config: Config = {
       fontFamily: {
         sans: ['system-ui', 'sans-serif'],
       },
+      keyframes: {
+        breathing: {
+          '0%, 100%': { transform: 'scale(1)', opacity: '0.5' },
+          '50%': { transform: 'scale(1.08)', opacity: '0.85' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'fade-out': {
+          '0%': { opacity: '1' },
+          '100%': { opacity: '0' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+      },
+      animation: {
+        breathing: 'breathing 6s ease-in-out infinite',
+        'fade-in': 'fade-in 0.8s ease-out forwards',
+        'fade-out': 'fade-out 0.8s ease-out forwards',
+        shimmer: 'shimmer 3s ease-in-out infinite',
+      },
     },
   },
   plugins: [],

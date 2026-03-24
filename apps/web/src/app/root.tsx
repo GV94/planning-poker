@@ -7,6 +7,8 @@ import {
   ScrollRestoration,
 } from 'react-router';
 import type { Route } from './+types/root.js';
+import { ServerStatusProvider } from '../contexts/server-status.jsx';
+import { ServerStatusIndicator } from '../components/ui/server-status-indicator.jsx';
 import './app.css';
 
 export const links: Route.LinksFunction = () => [
@@ -57,8 +59,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <main className="mx-auto flex max-w-5xl flex-1 px-4 py-6">
-      <Outlet />
-    </main>
+    <ServerStatusProvider>
+      <ServerStatusIndicator />
+      <main className="mx-auto flex max-w-5xl flex-1 px-4 py-6">
+        <Outlet />
+      </main>
+    </ServerStatusProvider>
   );
 }
