@@ -10,6 +10,8 @@
     "web:test": "nx test web",
     "p2p:dev": "nx serve lobby-server",
     "p2p:build": "nx build lobby-server",
+    "e2e:lobby": "nx test lobby-server-e2e",
+    "e2e:lobby:coverage": "nx test lobby-server-e2e --coverage",
     "verify": "nx run-many --targets=lint,build --all",
     "prepare": "husky"
   },
