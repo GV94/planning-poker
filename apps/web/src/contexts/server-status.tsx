@@ -61,6 +61,12 @@ export function ServerStatusProvider({ children }: { children: ReactNode }) {
         if (!cancelled && res.ok) {
           hasGoneOnline.current = true;
           setStatus('online');
+        } else if (!cancelled) {
+          // Non-ok response (e.g. 502/503 from proxy during cold start) — retry
+          setStatus('waking');
+          setTimeout(() => {
+            if (!cancelled) checkHealth();
+          }, HEALTH_RETRY_DELAY_MS);
         }
       } catch {
         clearTimeout(wakingTimer);
