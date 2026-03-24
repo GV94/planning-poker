@@ -4,7 +4,7 @@ import { nxViteTsPaths } from '@nx/vite/plugins/nx-tsconfig-paths.plugin';
 import { reactRouter } from '@react-router/dev/vite';
 import tailwindcss from '@tailwindcss/vite';
 
-export default defineConfig(() => ({
+export default defineConfig(({ mode }) => ({
   root: import.meta.dirname,
   cacheDir: '../node_modules/.vite/web',
   server: {
@@ -18,7 +18,11 @@ export default defineConfig(() => ({
     port: 4200,
     host: '0.0.0.0',
   },
-  plugins: [tailwindcss(), nxViteTsPaths(), reactRouter()],
+  plugins: [
+    tailwindcss(),
+    nxViteTsPaths(),
+    ...(mode === 'test' ? [] : [reactRouter()]),
+  ],
   // Uncomment this if you are using workers.
   // worker: {
   //  plugins: [ nxViteTsPaths() ],

@@ -75,9 +75,12 @@ export function WakeUpOverlay({
   visible,
   onFadeOutComplete,
 }: WakeUpOverlayProps) {
-  const [messageIndex, setMessageIndex] = useState(
-    () => Math.floor(Math.random() * LOADING_MESSAGES.length),
-  );
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  // Randomise starting message after hydration to avoid SSR mismatch
+  useEffect(() => {
+    setMessageIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+  }, []);
   const [isFadingMessage, setIsFadingMessage] = useState(false);
   const [explainerOpen, setExplainerOpen] = useState(false);
   const phaseRef = useRef<OverlayPhase>('waiting');
@@ -236,7 +239,7 @@ export function WakeUpOverlay({
     [],
   );
 
-  if (phase === 'done' && !visible) return null;
+  if (!visible && phase !== 'transitioning') return null;
 
   const baseClasses =
     mode === 'blocking'
