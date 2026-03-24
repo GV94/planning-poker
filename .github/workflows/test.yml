@@ -20,7 +20,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm nx run-many --targets=test --all
+      - run: pnpm nx run-many --targets=test --all --exclude=lobby-server-e2e
 
   e2e:
     name: E2E Tests
