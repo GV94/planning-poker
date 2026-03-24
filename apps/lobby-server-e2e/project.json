@@ -4,6 +4,18 @@
   "root": "apps/lobby-server-e2e",
   "sourceRoot": "apps/lobby-server-e2e/src",
   "projectType": "application",
+  "targets": {
+    "e2e-test": {
+      "cache": true,
+      "inputs": ["default", "^default"],
+      "outputs": ["{workspaceRoot}/coverage/lobby-server-e2e"],
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/lobby-server-e2e",
+        "command": "vitest run"
+      }
+    }
+  },
   "tags": ["type:e2e"],
   "implicitDependencies": ["lobby-server"]
 }
