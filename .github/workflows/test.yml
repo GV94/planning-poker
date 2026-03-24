@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  unit-test:
     name: Unit Tests
     runs-on: ubuntu-latest
     steps:
@@ -20,9 +20,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm nx run-many --targets=test --all --exclude=lobby-server-e2e
+      - run: pnpm nx run-many --targets=unit-test --all
 
-  e2e:
+  e2e-test:
     name: E2E Tests
     runs-on: ubuntu-latest
     services:
@@ -47,7 +47,7 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm e2e:lobby
+      - run: pnpm nx run-many --targets=e2e-test --all
         env:
           REDIS_URL: localhost
           REDIS_PORT: 6379

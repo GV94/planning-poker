@@ -8,7 +8,10 @@
     "build": {
       "dependsOn": ["^build"]
     },
-    "test": {
+    "unit-test": {
+      "inputs": ["default", "^default"]
+    },
+    "e2e-test": {
       "inputs": ["default", "^default"]
     },
     "lint": {
@@ -41,7 +44,7 @@
       "plugin": "@nx/vite/plugin",
       "options": {
         "buildTargetName": "build",
-        "testTargetName": "test",
+        "testTargetName": "unit-test",
         "serveTargetName": "serve",
         "devTargetName": "dev",
         "previewTargetName": "preview",
@@ -49,14 +52,16 @@
         "typecheckTargetName": "typecheck",
         "buildDepsTargetName": "build-deps",
         "watchDepsTargetName": "watch-deps"
-      }
+      },
+      "exclude": ["apps/lobby-server-e2e/**"]
     },
     {
       "plugin": "@nx/vitest",
       "options": {
-        "testTargetName": "test",
-        "ciTargetName": "test-ci"
-      }
+        "testTargetName": "unit-test",
+        "ciTargetName": "unit-test-ci"
+      },
+      "exclude": ["apps/lobby-server-e2e/**"]
     },
     {
       "plugin": "@nx/eslint/plugin",
