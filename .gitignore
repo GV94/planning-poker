@@ -144,3 +144,6 @@ vite.config.ts.timestamp-*
 
 vite.config.*.timestamp*
 vitest.config.*.timestamp*
+
+# Superpowers brainstorming scratch files
+.superpowers/
