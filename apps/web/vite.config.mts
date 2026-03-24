@@ -10,6 +10,9 @@ export default defineConfig(() => ({
   server: {
     port: 4200,
     host: '0.0.0.0',
+    watch: {
+      usePolling: !!process.env.CHOKIDAR_USEPOLLING,
+    },
   },
   preview: {
     port: 4200,

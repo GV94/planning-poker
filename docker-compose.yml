@@ -6,6 +6,7 @@ services:
     environment:
       NODE_ENV: development
       REDIS_URL: redis://redis:6379
+      CHOKIDAR_USEPOLLING: 'true'
     ports:
       - 3002:3002
     volumes:
@@ -24,6 +25,7 @@ services:
     environment:
       NODE_ENV: development
       VITE_API_BASE: http://localhost:3002
+      CHOKIDAR_USEPOLLING: 'true'
     ports:
       - 4200:4200
     depends_on:
