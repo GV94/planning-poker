@@ -13,10 +13,7 @@
 |---|---|---|
 | `PORT` | Yes | Server port (must match the port above, `3002`) |
 | `CORS_ORIGIN` | Yes | Frontend URL (e.g., `https://plokr.app`) |
-| `REDIS_URL` | Yes | Redis Cloud connection URL |
-| `REDIS_USERNAME` | No | Redis Cloud username (if required) |
-| `REDIS_PASSWORD` | No | Redis Cloud password |
-| `REDIS_PORT` | No | Redis port (defaults to `6379`) |
+| `REDIS_URL` | Yes | Redis connection string (e.g., `redis://user:pass@host:port`) |
 | `TURNSTILE_SECRET_KEY` | No | Cloudflare Turnstile secret for CAPTCHA verification |
 
 ## GitHub Actions Secrets

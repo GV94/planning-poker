@@ -36,7 +36,7 @@ vi.mock('crypto', async (importOriginal) => {
 });
 
 // Ensure the env var exists before the module reads it at import time.
-vi.stubEnv('REDIS_URL', 'localhost');
+vi.stubEnv('REDIS_URL', 'redis://localhost:6379');
 
 // Now it is safe to import — the redis mock is in place and REDIS_URL is set.
 const {
@@ -127,7 +127,7 @@ describe('module-level redis setup', () => {
 
     expect(consoleSpy).toHaveBeenCalledWith(
       'Failed to connect to Redis at',
-      'localhost',
+      'redis://localhost:6379',
       connectError
     );
     consoleSpy.mockRestore();
@@ -143,7 +143,7 @@ describe('module-level redis setup', () => {
       'REDIS_URL environment variable is required'
     );
 
-    vi.stubEnv('REDIS_URL', 'localhost');
+    vi.stubEnv('REDIS_URL', 'redis://localhost:6379');
   });
 
   it('passes REDIS_URL directly to createClient', async () => {
@@ -158,7 +158,7 @@ describe('module-level redis setup', () => {
     });
 
     vi.unstubAllEnvs();
-    vi.stubEnv('REDIS_URL', 'localhost');
+    vi.stubEnv('REDIS_URL', 'redis://localhost:6379');
   });
 });
 

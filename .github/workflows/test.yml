@@ -49,5 +49,4 @@ jobs:
 
       - run: pnpm nx run-many --targets=e2e-test --all
         env:
-          REDIS_URL: localhost
-          REDIS_PORT: 6379
+          REDIS_URL: redis://localhost:6379
