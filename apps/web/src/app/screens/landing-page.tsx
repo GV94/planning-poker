@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '../../components/ui/button.jsx';
+import { WakeUpOverlay } from '../../components/ui/wake-up-overlay.jsx';
+import { useServerStatus } from '../../contexts/server-status.jsx';
 import { createLobby } from '../../p2p/lobby-connection.js';
 import { saveClientSession, setLobbySession } from '../../p2p/lobby-session.js';
 import { type MetaFunction } from 'react-router';
@@ -40,10 +42,12 @@ export const meta: MetaFunction = () => [
 
 export default function LandingPage() {
   const navigate = useNavigate();
+  const { status, isReady, registerSocket } = useServerStatus();
   const [name, setName] = useState('');
   const [joinCode, setJoinCode] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string>();
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
+  const showOverlay = status === 'checking' || status === 'waking';
 
   async function handleCreateLobby() {
     const trimmedName = name.trim() || 'Anonymous';
@@ -59,6 +63,7 @@ export default function LandingPage() {
     // Persist the live socket connection and identifiers so the lobby page
     // can reuse the same session after navigation.
     if (socket) {
+      registerSocket(socket);
       setLobbySession({
         lobbyId,
         hostId,
@@ -80,7 +85,8 @@ export default function LandingPage() {
   }
 
   return (
-    <section className="flex min-h-[calc(100vh-4rem)] w-full items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10">
+    <section className="relative flex min-h-[calc(100vh-4rem)] w-full items-center justify-center bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 px-4 py-10">
+      <WakeUpOverlay mode="blocking" visible={showOverlay} />
       <div className="grid w-full max-w-4xl gap-8 md:grid-cols-[1.6fr,1.2fr]">
         <div className="space-y-6">
           <header className="space-y-3 text-left">
@@ -113,7 +119,7 @@ export default function LandingPage() {
                 size="lg"
                 className="w-full sm:w-auto transition-transform duration-150 hover:-translate-y-0.5 active:translate-y-0"
                 onClick={handleCreateLobby}
-                disabled={turnstileSiteKey && !captchaToken}
+                disabled={!isReady || (!!turnstileSiteKey && !captchaToken)}
               >
                 Create lobby
               </Button>
@@ -162,6 +168,7 @@ export default function LandingPage() {
                 type="submit"
                 variant="outline"
                 className="w-full border-slate-700 text-slate-100 hover:border-slate-500 hover:bg-slate-800 sm:w-auto"
+                disabled={!isReady}
               >
                 Join lobby
               </Button>

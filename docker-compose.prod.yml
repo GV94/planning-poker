@@ -1,0 +1,13 @@
+services:
+  lobby-server:
+    build:
+      context: .
+      dockerfile: apps/lobby-server/Dockerfile
+    environment:
+      NODE_ENV: production
+      PORT: ${PORT:-3002}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      REDIS_URL: ${REDIS_URL}
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
+    ports:
+      - "${PORT:-3002}:${PORT:-3002}"

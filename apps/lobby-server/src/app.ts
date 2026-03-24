@@ -27,9 +27,22 @@ registerStatsHandlers();
 
 export function createApp(): { httpServer: HttpServer; io: Server } {
   const httpServer = createServer((req, res) => {
+    const corsOrigin = process.env.CORS_ORIGIN ?? '*';
+
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': corsOrigin,
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      });
+      res.end();
+      return;
+    }
+
     if (req.url === '/health' && req.method === 'GET') {
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Access-Control-Allow-Origin', corsOrigin);
       res.end(JSON.stringify({ status: 'ok' }));
     }
   });

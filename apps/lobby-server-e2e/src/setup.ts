@@ -3,8 +3,7 @@ import type { Server as SocketIOServer } from 'socket.io';
 import { beforeAll, afterAll } from 'vitest';
 
 // Set required env vars before server modules load
-process.env.REDIS_URL = process.env.REDIS_URL ?? 'localhost';
-process.env.REDIS_PORT = process.env.REDIS_PORT ?? '6379';
+process.env.REDIS_URL = process.env.REDIS_URL ?? 'redis://localhost:6379';
 
 let httpServer: HttpServer | undefined;
 let io: SocketIOServer | undefined;
