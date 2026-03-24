@@ -234,8 +234,8 @@ describe('handleJoinLobby', () => {
         'tok'
       );
 
-      // Captcha is still verified (even for rejoining participants)
-      expect(verifyCaptcha).toHaveBeenCalledWith('tok', '127.0.0.1');
+      // Captcha is skipped for rejoining participants
+      expect(verifyCaptcha).not.toHaveBeenCalled();
 
       // Name was updated
       const participant = lobby.participants.get('client-1' as ClientId);
@@ -343,6 +343,8 @@ describe('handleJoinLobby', () => {
 
   describe('CAPTCHA failure', () => {
     it('acks with an error when captcha verification fails for a new participant', async () => {
+      const lobby = makeLobby([makeParticipant('host-1', 'Host')]);
+      loadLobby.mockResolvedValue(lobby);
       verifyCaptcha.mockResolvedValue(false);
       const ack = vi.fn();
 
@@ -362,8 +364,8 @@ describe('handleJoinLobby', () => {
         error: 'Invalid CAPTCHA',
       });
 
-      // loadLobby was never called
-      expect(loadLobby).not.toHaveBeenCalled();
+      // loadLobby is called (lobby is loaded before captcha check)
+      expect(loadLobby).toHaveBeenCalledWith('lobby-1');
       expect(socket.join).not.toHaveBeenCalled();
       expect(saveLobby).not.toHaveBeenCalled();
       expect(appEvents.emit).not.toHaveBeenCalled();
@@ -371,6 +373,8 @@ describe('handleJoinLobby', () => {
     });
 
     it('does not throw when captcha fails and ack is undefined', async () => {
+      const lobby = makeLobby([makeParticipant('host-1', 'Host')]);
+      loadLobby.mockResolvedValue(lobby);
       verifyCaptcha.mockResolvedValue(false);
 
       await expect(
@@ -385,7 +389,7 @@ describe('handleJoinLobby', () => {
         )
       ).resolves.toBeUndefined();
 
-      expect(loadLobby).not.toHaveBeenCalled();
+      expect(loadLobby).toHaveBeenCalledWith('lobby-1');
       expect(socket.join).not.toHaveBeenCalled();
       expect(saveLobby).not.toHaveBeenCalled();
     });

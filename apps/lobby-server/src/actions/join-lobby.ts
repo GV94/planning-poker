@@ -16,23 +16,29 @@ export async function handleJoinLobby(
   ack: ((payload: JoinLobbyAckPayload) => void) | undefined,
   captchaToken?: string
 ) {
-  const isCaptchaValid = await verifyCaptcha(
-    captchaToken,
-    socket.handshake.address
-  );
-  if (!isCaptchaValid) {
-    if (ack) {
-      ack({ ok: false, error: 'Invalid CAPTCHA' });
-    }
-    return;
-  }
-
   const lobby = await loadLobby(lobbyId);
   if (!lobby) {
     if (ack) {
       ack({ ok: false, error: 'Lobby not found' });
     }
     return;
+  }
+
+  // Only verify CAPTCHA if this is a new participant (not a rejoin)
+  // If existingClientId is provided and valid in the lobby, we skip verification.
+  const isRejoining = existingClientId && lobby.participants.has(existingClientId);
+
+  if (!isRejoining) {
+    const isCaptchaValid = await verifyCaptcha(
+      captchaToken,
+      socket.handshake.address
+    );
+    if (!isCaptchaValid) {
+      if (ack) {
+        ack({ ok: false, error: 'Invalid CAPTCHA' });
+      }
+      return;
+    }
   }
 
   const displayName = normalizeName(name);

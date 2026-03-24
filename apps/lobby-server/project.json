@@ -63,7 +63,7 @@
       "executor": "nx:noop"
     },
     "test": {
-      "executor": "@nx/vite:test",
+      "executor": "@nx/vitest:test",
       "outputs": ["{workspaceRoot}/coverage/lobby-server"],
       "options": {
         "reportsDirectory": "../../coverage/lobby-server"
