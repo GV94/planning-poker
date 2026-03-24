@@ -20,4 +20,34 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      - run: pnpm nx run-many --targets=test --all
+      - run: pnpm nx run-many --targets=test --all --exclude=lobby-server-e2e
+
+  e2e:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm e2e:lobby
+        env:
+          REDIS_URL: localhost
+          REDIS_PORT: 6379

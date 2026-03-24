@@ -1,4 +1,4 @@
-import { createServer } from 'http';
+import { createServer, type Server as HttpServer } from 'http';
 import { Server } from 'socket.io';
 import type { ClientId, LobbyId, PlanningPokerCard } from 'shared-types';
 import { handleCreateLobby } from './actions/create-lobby.js';
@@ -25,7 +25,7 @@ import { registerStatsHandlers } from './events/stats-handlers.js';
 // Initialize event handlers
 registerStatsHandlers();
 
-export function createApp() {
+export function createApp(): { httpServer: HttpServer; io: Server } {
   const httpServer = createServer((req, res) => {
     if (req.url === '/health' && req.method === 'GET') {
       res.statusCode = 200;
@@ -34,7 +34,6 @@ export function createApp() {
     }
   });
   const io = new Server(httpServer, {
-    // Allow all origins for now; tighten this later if needed
     cors: {
       origin: process.env.CORS_ORIGIN ?? '*',
     },
@@ -46,8 +45,6 @@ export function createApp() {
       handleDisconnect(socket);
     });
 
-    // Client should emit:
-    //   socket.emit('lobby:create', { name, captchaToken }, (response) => { ... })
     socket.on(
       'lobby:create',
       (
@@ -58,8 +55,6 @@ export function createApp() {
       }
     );
 
-    // Client should emit:
-    //   socket.emit('lobby:join', { lobbyId, name, clientId, captchaToken }, (response) => { ... })
     socket.on(
       'lobby:join',
       (
@@ -90,8 +85,6 @@ export function createApp() {
       }
     );
 
-    // Client may emit:
-    //   socket.emit('lobby:exists', { lobbyId }, (response) => { ok: boolean })
     socket.on(
       'lobby:exists',
       (data: { lobbyId?: LobbyId }, ack?: (payload: { ok: boolean }) => void) => {
@@ -99,8 +92,6 @@ export function createApp() {
       }
     );
 
-    // Client should emit:
-    //   socket.emit('lobby:vote', { lobbyId, card }, (response) => { ... })
     socket.on(
       'lobby:vote',
       (
@@ -111,24 +102,18 @@ export function createApp() {
       }
     );
 
-    // Client should emit:
-    //   socket.emit('lobby:reveal', { lobbyId }, (response) => { ... })
     socket.on(
       'lobby:reveal',
       (data: { lobbyId?: LobbyId }, ack?: (payload: RevealAckPayload) => void) =>
         void handleReveal(io, socket, data, ack)
     );
 
-    // Client should emit:
-    //   socket.emit('lobby:reset', { lobbyId }, (response) => { ... })
     socket.on(
       'lobby:reset',
       (data: { lobbyId?: LobbyId }, ack?: (payload: ResetAckPayload) => void) =>
         void handleReset(io, socket, data, ack)
     );
 
-    // Client should emit:
-    //   socket.emit('lobby:sync', { lobbyId, clientId }, (response) => { ... })
     socket.on(
       'lobby:sync',
       (

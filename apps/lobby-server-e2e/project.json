@@ -1,0 +1,9 @@
+{
+  "name": "lobby-server-e2e",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "root": "apps/lobby-server-e2e",
+  "sourceRoot": "apps/lobby-server-e2e/src",
+  "projectType": "application",
+  "tags": ["type:e2e"],
+  "implicitDependencies": ["lobby-server"]
+}
