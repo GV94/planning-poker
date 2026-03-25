@@ -43,7 +43,7 @@ describe('registerStatsHandlers', () => {
   it('catches redis errors on LOBBY_CREATED without crashing', async () => {
     const error = new Error('Redis connection lost');
     mockRedis.incr.mockRejectedValueOnce(error);
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     appEvents.emit(LOBBY_CREATED);
     await flush();
@@ -54,7 +54,7 @@ describe('registerStatsHandlers', () => {
   it('catches redis errors on LOBBY_JOINED without crashing', async () => {
     const error = new Error('Redis connection lost');
     mockRedis.incr.mockRejectedValueOnce(error);
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     appEvents.emit(LOBBY_JOINED);
     await flush();

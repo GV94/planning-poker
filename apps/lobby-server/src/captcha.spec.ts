@@ -75,7 +75,7 @@ describe('verifyCaptcha', () => {
 
   it('should return false when fetch throws a network error', async () => {
     vi.stubEnv('TURNSTILE_SECRET_KEY', 'test-secret');
-    vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     const mockFetch = vi.fn().mockRejectedValue(new Error('Network error'));
     vi.stubGlobal('fetch', mockFetch);
