@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/GV94/planning-poker/compare/v0.2.1...v0.2.2) (2026-03-25)
+
+
+### Bug Fixes
+
+* **web:** improve loading UX for slow networks ([#11](https://github.com/GV94/planning-poker/issues/11)) ([8403fa3](https://github.com/GV94/planning-poker/commit/8403fa31b878835c274efec9a8b0b71d1e5b1aad))
+
 ## [0.2.1](https://github.com/GV94/planning-poker/compare/v0.2.0...v0.2.1) (2026-03-24)
 
 
