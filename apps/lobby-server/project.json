@@ -62,6 +62,15 @@
       "dependsOn": ["prune-lockfile", "copy-workspace-modules"],
       "executor": "nx:noop"
     },
+    "typecheck": {
+      "cache": true,
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc --noEmit -p apps/lobby-server/tsconfig.app.json"
+      },
+      "inputs": ["default", "^default"],
+      "parallelism": true
+    },
     "unit-test": {
       "executor": "@nx/vitest:test",
       "outputs": ["{workspaceRoot}/coverage/lobby-server"],

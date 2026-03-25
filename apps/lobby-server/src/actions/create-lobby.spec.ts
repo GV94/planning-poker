@@ -211,7 +211,7 @@ describe('handleCreateLobby', () => {
 
   it('clears a pending removal timer for the lobby id', async () => {
     const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout');
-    const fakeTimer = setTimeout(() => {}, 99999) as ReturnType<typeof setTimeout>;
+    const fakeTimer = setTimeout(() => undefined, 99999) as ReturnType<typeof setTimeout>;
     lobbyRemovalTimers.set(FAKE_LOBBY_ID, fakeTimer);
 
     const ack = vi.fn();

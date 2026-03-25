@@ -105,7 +105,7 @@ describe('module-level redis setup', () => {
     )?.[1] as (err: unknown) => void;
     expect(errorHandler).toBeDefined();
 
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     errorHandler(new Error('test error'));
     expect(consoleSpy).toHaveBeenCalledWith('Redis client error', expect.any(Error));
     consoleSpy.mockRestore();
@@ -119,7 +119,7 @@ describe('module-level redis setup', () => {
     vi.resetModules();
     const connectError = new Error('Connection refused');
     fakeRedisClient.connect.mockRejectedValueOnce(connectError);
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
 
     await import('./LobbyService.js');
     // Let microtask (catch handler) run

@@ -155,7 +155,7 @@ export default function LobbyPage() {
   useEffect(() => {
     if (!session) return;
 
-    const { socket } = session;
+    const { socket, lobbyId: sessionLobbyId, selfId: sessionSelfId } = session;
 
     // Register socket with server status provider for disconnect/reconnect tracking
     registerSocket(socket);
@@ -240,8 +240,8 @@ export default function LobbyPage() {
         try {
           const synced = await syncLobby(
             socket,
-            session.lobbyId,
-            session.selfId
+            sessionLobbyId,
+            sessionSelfId
           );
           setSession((prev) => {
             if (!prev || prev.lobbyId !== synced.lobbyId) return prev;
