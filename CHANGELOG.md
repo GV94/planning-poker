@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.1](https://github.com/GV94/planning-poker/compare/v0.2.0...v0.2.1) (2026-03-24)
+
+
+### Bug Fixes
+
+* **web:** prevent WakeUpOverlay from rendering when mounted invisible ([#6](https://github.com/GV94/planning-poker/issues/6)) ([1c2799e](https://github.com/GV94/planning-poker/commit/1c2799e4bca72a9465767aed9f6f98c496063cff))
+
 ## [0.2.0](https://github.com/GV94/planning-poker/compare/v0.1.0...v0.2.0) (2026-03-24)
 
 
