@@ -92,6 +92,7 @@ export function WakeUpOverlay({
   const textRef = useRef<HTMLParagraphElement | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number>(0);
+  const lastBreathRef = useRef(0);
   const prefersReducedMotion = useRef(false);
 
   // Check reduced motion preference
@@ -111,6 +112,7 @@ export function WakeUpOverlay({
 
       if (currentPhase === 'waiting') {
         const breath = breathFactor(t);
+        lastBreathRef.current = breath;
         const spreadFactor = 0.15 + breath * 0.85;
         const sizeFactor = 0.7 + breath * 0.3;
 
@@ -138,13 +140,17 @@ export function WakeUpOverlay({
           Math.min(elapsed / EXPAND_DURATION, 1),
         );
 
+        const breath0 = lastBreathRef.current;
+        const startSize = 0.7 + breath0 * 0.3;
+        const startSpread = 0.15 + breath0 * 0.85;
+
         for (let i = 0; i < BALLS.length; i++) {
           const el = ballRefs.current[i];
           if (!el) continue;
           const b = BALLS[i];
-          const sizeFactor = 0.7 + expandP * 1.5;
+          const sizeFactor = startSize + expandP * (2.2 - startSize);
           const s = b.size * sizeFactor;
-          const spreadFactor = 0.15 + expandP * 0.85;
+          const spreadFactor = startSpread + expandP * (1.0 - startSpread);
           const ox =
             Math.sin(t * b.speedA + b.phase) * b.orbitX * spreadFactor +
             Math.cos(t * b.speedA * 0.6 + b.phase * 1.4) *
