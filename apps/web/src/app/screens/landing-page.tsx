@@ -47,7 +47,7 @@ export default function LandingPage() {
   const [joinCode, setJoinCode] = useState('');
   const [captchaToken, setCaptchaToken] = useState<string>();
   const turnstileSiteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY;
-  const showOverlay = status === 'checking' || status === 'waking';
+  const showOverlay = status === 'waking';
 
   async function handleCreateLobby() {
     const trimmedName = name.trim() || 'Anonymous';
