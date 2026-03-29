@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/GV94/planning-poker/compare/v0.2.2...v0.2.3) (2026-03-29)
+
+
+### Bug Fixes
+
+* **web:** proxy GoatCounter through own domain to bypass ad blockers ([#13](https://github.com/GV94/planning-poker/issues/13)) ([da30bac](https://github.com/GV94/planning-poker/commit/da30bac3d5709e244bb56ddc9d1759550c6c78dc))
+
 ## [0.2.2](https://github.com/GV94/planning-poker/compare/v0.2.1...v0.2.2) (2026-03-25)
 
 
