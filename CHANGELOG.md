@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/GV94/planning-poker/compare/v0.3.0...v0.4.0) (2026-03-31)
+
+
+### Features
+
+* **web:** add social media card image and meta tags ([#18](https://github.com/GV94/planning-poker/issues/18)) ([919bf54](https://github.com/GV94/planning-poker/commit/919bf542ea1c6ce19e5387f4771b2297cad74019))
+
 ## [0.3.0](https://github.com/GV94/planning-poker/compare/v0.2.3...v0.3.0) (2026-03-31)
 
 
