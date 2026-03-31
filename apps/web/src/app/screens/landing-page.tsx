@@ -31,6 +31,12 @@ export const meta: MetaFunction = () => [
     content: 'Simple, fast planning poker for remote teams. No signup needed.',
   },
   { property: 'og:type', content: 'website' },
+  { property: 'og:url', content: 'https://plokr.app' },
+  { property: 'og:image', content: 'https://plokr.app/og-image.png' },
+  { property: 'og:image:width', content: '1200' },
+  { property: 'og:image:height', content: '630' },
+  { property: 'og:image:alt', content: 'Plokr - Instant Planning Poker for Agile Teams' },
+  { property: 'og:site_name', content: 'Plokr' },
   { name: 'twitter:card', content: 'summary_large_image' },
   { name: 'twitter:title', content: 'Plokr - Instant Planning Poker' },
   {
@@ -38,6 +44,8 @@ export const meta: MetaFunction = () => [
     content:
       'Zero-friction estimation for agile teams. Start voting in seconds.',
   },
+  { name: 'twitter:image', content: 'https://plokr.app/og-image.png' },
+  { name: 'twitter:image:alt', content: 'Plokr - Instant Planning Poker for Agile Teams' },
 ];
 
 export default function LandingPage() {
