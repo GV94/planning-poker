@@ -458,6 +458,33 @@ export default function LobbyPage() {
   const participants = session.participants;
   const isAdmin = self?.isAdmin ?? false;
 
+  function computeVoteStats() {
+    const numericVotes: number[] = [];
+    for (const p of participants) {
+      if (typeof p.vote === 'number') {
+        numericVotes.push(p.vote);
+      }
+    }
+
+    if (numericVotes.length === 0) {
+      return { min: '-', max: '-', median: '-', average: '-' };
+    }
+
+    numericVotes.sort((a, b) => a - b);
+    const min = numericVotes[0];
+    const max = numericVotes[numericVotes.length - 1];
+    const mid = Math.floor(numericVotes.length / 2);
+    const median =
+      numericVotes.length % 2 === 0
+        ? (numericVotes[mid - 1] + numericVotes[mid]) / 2
+        : numericVotes[mid];
+    const average =
+      numericVotes.reduce((sum, v) => sum + v, 0) / numericVotes.length;
+
+    const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+    return { min: fmt(min), max: fmt(max), median: fmt(median), average: fmt(average) };
+  }
+
   async function handleReveal() {
     try {
       if (!session) return;
@@ -705,6 +732,26 @@ export default function LobbyPage() {
                   })}
                 </ul>
               )}
+              {session.isRevealed && (() => {
+                const stats = computeVoteStats();
+                return (
+                  <div className="mt-4 grid grid-cols-4 gap-2">
+                    {(['min', 'max', 'median', 'average'] as const).map((key) => (
+                      <div
+                        key={key}
+                        className="flex flex-col items-center rounded-lg bg-slate-950/60 px-2 py-2"
+                      >
+                        <span className="text-[10px] uppercase tracking-wide text-slate-500">
+                          {key}
+                        </span>
+                        <span className="text-lg font-semibold text-slate-50">
+                          {stats[key]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         </div>
