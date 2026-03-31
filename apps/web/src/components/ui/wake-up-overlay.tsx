@@ -266,7 +266,7 @@ export function WakeUpOverlay({
         aria-hidden="true"
       >
         <defs>
-          <filter id="goo">
+          <filter id="goo" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur
               in="SourceGraphic"
               stdDeviation="18"
@@ -287,7 +287,7 @@ export function WakeUpOverlay({
           <div
             ref={sceneRef}
             className="relative"
-            style={{ width: 200, height: 200, filter: 'url(#goo)' }}
+            style={{ width: 280, height: 280, filter: 'url(#goo)' }}
           >
             {BALLS.map((b, i) => (
               <div
