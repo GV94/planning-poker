@@ -1,6 +1,6 @@
 {
   "name": "planning-poker",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "private": true,
   "packageManager": "pnpm@10.29.2",
   "type": "module",
